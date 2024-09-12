@@ -36,11 +36,6 @@ class Attribute(abc.ABC):
                 .format('var', cls.__name__)
             )
 
-    @staticmethod
-    @abc.abstractmethod
-    def this_type(element: Element) -> bool:
-        return element.tag == 'attribute'
-
     def get_name(self):
         return self.element.attrib['name']
 
@@ -50,21 +45,21 @@ class Attribute(abc.ABC):
     def print(self):
         print(self.__dict__)
 
-    # @classmethod
-    # def this_type(cls, element: Element):
-    #     print(type(cls))
-    #     print(cls.TYPE)
-    #     if cls.TYPE != Attribute.TYPE:
-    #         if 'type' in element.attrib:
-    #             if element.attrib['type'] == cls.TYPE:
-    #                 return True
-    #         else:
-    #             for child in element.findall('.//restriction'):
-    #                 if child.attrib['base'] == cls.TYPE:
-    #                     return True
-    #             return False
-    #     else:
-    #         return element.tag == 'attribute'
+    @classmethod
+    def this_type(cls, element: Element):
+        print(type(cls))
+        print(cls.TYPE)
+        if cls.TYPE != Attribute.TYPE:
+            if 'type' in element.attrib:
+                if element.attrib['type'] == cls.TYPE:
+                    return True
+            else:
+                for child in element.findall('.//restriction'):
+                    if child.attrib['base'] == cls.TYPE:
+                        return True
+                return False
+        else:
+            return element.tag == 'attribute'
 
 
 
@@ -87,15 +82,6 @@ class AInteger(Attribute):
         else:
             return None
 
-    @staticmethod
-    def this_type(element: Element) -> bool:
-        if isinstance(element,Element):
-            for child in element.findall('.//restriction'):
-                if child.attrib['base'] == 'integer':
-                    return True
-            return False
-        else:
-            return False
 
 
 
@@ -106,26 +92,13 @@ class ALong(Attribute):
         super().__init__(element)
         self.totalDigits = super().get_value('totalDigits')
 
-    @staticmethod
-    def this_type(element: Element) -> bool:
-        for child in element.findall('.//restriction'):
-            if child.attrib['base'] == 'long':
-                return True
-        return False
+
 
 class ADate(Attribute):
     TYPE = 'date'
     def __init__(self, element: Element):
         super().__init__(element)
-    @staticmethod
-    def this_type(element: Element) -> bool:
-        if 'type' in element.attrib:
-            if element.attrib['type'] == 'date':
-                return True
-            else:
-                return False
-        else:
-            return False
+
 
 class AString(Attribute):
     TYPE = 'string'
@@ -136,31 +109,18 @@ class AString(Attribute):
         self.maxLength = super().get_value('maxLength')
         self.pattern = super().get_value('pattern')
 
-    @staticmethod
-    def this_type(element: Element) -> bool:
-        for child in element.findall('.//restriction'):
-            if child.attrib['base'] == 'string':
-                return True
-        return False
+
 
 class ABoolean(Attribute):
     TYPE = 'boolean'
     def __init__(self, element: Element):
         super().__init__(element)
-    @staticmethod
-    def this_type(element: Element) -> bool:
-        if 'type' in element.attrib:
-            if element.attrib['type'] == 'boolean':
-                return True
-            else:
-                return False
-        else:
-            return False
+
 
 
 class AttributeGenerator:
 
-    def __init__(self, attribute: xml.etree.ElementTree.Element):
+    def __init__(self, attribute: Element):
         self.attribute = attribute
     def determine_type(self, ):
         att_types_list = [AInteger, ALong, ADate, AString, ABoolean]
