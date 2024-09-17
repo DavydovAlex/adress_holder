@@ -3,14 +3,32 @@ import abc
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+
+
+
+
 class Attribute(abc.ABC):
     TYPE = 'attribute'
+
+    class TYPES:
+        STRING = 'string'
+        INTEGER = 'integer'
+        LONG = 'long'
+        DATE = 'date'
+        BOOLEAN = 'boolean'
+
+    class DB_TYPES:
+        STRING = 'VARCHAR'
+        INTEGER = 'INTEGER'
+        LONG = 'BIGINT'
+        DATE = 'DATE'
+        BOOLEAN = 'BOOLEAN'
+
     def __init__(self, element: Element):
         self.element = element
         self.name = self.get_name()
         self.use = self.get_use()
         self.documentation = self.get_documentation()
-
         self.enumeration = None
         self.pattern = None
         self.totalDigits = None
@@ -24,7 +42,7 @@ class Attribute(abc.ABC):
 
     def get_value(self, param):
         param_search = self.element.find('.//' + param)
-        if param_search:
+        if param_search is not None:
             return param_search.attrib['value']
         else:
             return None
@@ -47,8 +65,6 @@ class Attribute(abc.ABC):
 
     @classmethod
     def this_type(cls, element: Element):
-        print(type(cls))
-        print(cls.TYPE)
         if cls.TYPE != Attribute.TYPE:
             if 'type' in element.attrib:
                 if element.attrib['type'] == cls.TYPE:
@@ -63,9 +79,19 @@ class Attribute(abc.ABC):
 
 
 
+    @abc.abstractmethod
+    def get_params(self):
+        params = dict()
+        params['type'] = self.TYPE
+        params['name'] = self.name
+        params['use'] = self.use
+        params['documentation'] = self.documentation
+        return params
+
+
 
 class AInteger(Attribute):
-    TYPE = 'integer'
+    TYPE = T_INTEGER
 
     def __init__(self, element: Element):
         super().__init__(element)
@@ -82,26 +108,34 @@ class AInteger(Attribute):
         else:
             return None
 
-
-
+    def get_params(self):
+        params = super().get_params()
+        return params
 
 
 class ALong(Attribute):
-    TYPE = 'long'
+    TYPE = T_LONG
     def __init__(self,element: Element):
         super().__init__(element)
         self.totalDigits = super().get_value('totalDigits')
 
+    def get_params(self):
+        params = super().get_params()
+        return params
 
 
 class ADate(Attribute):
-    TYPE = 'date'
+    TYPE = T_DATE
     def __init__(self, element: Element):
         super().__init__(element)
 
+    def get_params(self):
+        params = super().get_params()
+        return params
+
 
 class AString(Attribute):
-    TYPE = 'string'
+    TYPE = T_STRING
     def __init__(self, element: Element):
         super().__init__(element)
         self.length = super().get_value('length')
@@ -109,24 +143,39 @@ class AString(Attribute):
         self.maxLength = super().get_value('maxLength')
         self.pattern = super().get_value('pattern')
 
+    def get_params(self):
+        params = super().get_params()
+        if self.length or self.maxLength:
+            params['length'] = self.length or self.maxLength
+        return params
 
 
 class ABoolean(Attribute):
-    TYPE = 'boolean'
+    TYPE = T_BOOLEAN
     def __init__(self, element: Element):
         super().__init__(element)
 
+    def get_params(self):
+        params = super().get_params()
+        return params
 
 
-class AttributeGenerator:
+def determine_type(attribute: Element ):
+    att_types_list = [AInteger,
+                      ALong,
+                      ADate,
+                      AString,
+                      ABoolean]
+    for cls in att_types_list:
+        if cls.this_type(attribute):
+            return cls(attribute)
+    return AString(attribute)
 
-    def __init__(self, attribute: Element):
-        self.attribute = attribute
-    def determine_type(self, ):
-        att_types_list = [AInteger, ALong, ADate, AString, ABoolean]
-        for cls in att_types_list:
-            if cls.this_type(self.attribute):
-                return cls(self.attribute)
-        return AString(self.attribute)
-    def get(attribute: xml.etree.ElementTree.Element)->Attribute:
-        pass
+
+
+
+
+
+
+
+

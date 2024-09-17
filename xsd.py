@@ -8,127 +8,133 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 from lxml import etree
 import re
+import Attribute
 
-class XSD:
-    def __init__(self, folder, filename, encoding, shortname):
+class XsdReader:
+    def __init__(self, path: Path, encoding,):
         try:
-            if shortname:
-                counter = 0
-                fullname = ''
-                files = os.listdir(folder)
-                for file in files:
-                    if filename in file:
-                        counter += 1
-                        fullname = file
-                if counter > 1:
-                    raise Exception("Каталог содержит больше одного файла с таким именем")
-                self.path = Path(folder) / fullname
-            else:
-                self.path = Path(folder) / filename
+            self.path = path
             self.encoding = encoding
-            self.schema = self._get_schema()
-            self.xml = self._get_element_tree()
-            self.xml_string = self._get_xml_string()
+
+            self.schema = self.get_schema()
+            self.raw_string = self.to_string()
         except Exception as e:
             raise e
 
-    def _get_schema(self):
+    def get_schema(self) -> xmlschema.XMLSchema:
         return xmlschema.XMLSchema(self.path)
 
-    def _get_element_tree(self):
+    def get_element_tree(self):
         return ElementTree.parse(self.path)
 
-    def _get_xml_string(self):
+    def to_string(self):
         with open(self.path, encoding=self.encoding) as f:
             return f.read()
 
-    @staticmethod
-    def exclude_xs(string):
-        return XSD.exclude_prefix(string,'xs')
 
-    @staticmethod
-    def exclude_prefix(string, prefix):
-        return re.sub(prefix + ':', '', string)
+    def exclude_xs_prefix(self, xsd_string):
+        return self.exclude_prefix(xsd_string, 'xs')
 
+    def exclude_prefix(self, xsd_string, prefix):
+        return re.sub(prefix + ':', '', xsd_string)
 
-
-
-
-
-class TableCreator:
-    def __init__(self, xsd:XSD):
-        self.xsd = xsd
-        self.process_xsd()
-
-
-
-
-
-
-    def process_xsd(self):
-        xsd_wout_xs = XSD.exclude_xs(self.xsd.xml_string)
-        xml = ElementTree.fromstring(xsd_wout_xs)
-        tablename = xml.find('element').attrib['name']
-        print(tablename)
-
-        attributes = xml.findall('.//attribute')
-        attrs_list = []
+    def get_columns(self) -> list:
+        xsd_without_xs = self.exclude_xs_prefix(self.raw_string)
+        root_element = ElementTree.fromstring(xsd_without_xs)
+        attributes = root_element.findall('.//attribute')
+        columns = []
         for attribute in attributes:
-            if Attribute.this_type(attribute):
-                attr = AttributeGenerator(attribute).determine_type()
-                attr.print()
-                print(type(attr))
-                #print(type(AttributeGenerator(attribute).determine_type()))
-            # print(type(arrtibute))
-            # elem = {}
-            # for child in arrtibute.iter():
-            #     # print(child.tag, child.attrib)
-            #     # if child.text:
-            #     #     elem[child.tag] = child.text
-            #     # if child.attrib:
-            #     #     elem[child.tag] = child.attrib
-            #     if child.tag == 'documentation':
-            #          elem['documentation'] = child.text
-            #     elif child.tag == 'attribute':
-            #         for key, value in child.attrib.items():
-            #             elem[key] = value
-            #     elif child.tag == 'restriction':
-            #         for key, value in child.attrib.items():
-            #             elem[key] = value
-            #     elif child.tag == 'totalDigits':
-            #         elem['totalDigits'] = child.attrib['value']
-            #     elif child.tag == 'minLength':
-            #         elem['minLength'] = child.attrib['value']
-            #     elif child.tag == 'maxLength':
-            #         elem['maxLength'] = child.attrib['value']
-            #     elif child.tag == 'pattern':
-            #         elem['pattern'] = child.attrib['value']
-            #attrs_list.append(elem)
-        print(attrs_list)
+            if Attribute.Attribute.this_type(attribute):
+                params = Attribute.determine_type(attribute).get_params()
+                columns.append(params)
+        return columns
+
+    def get_table_info(self):
+        xsd_without_xs = self.exclude_xs_prefix(self.raw_string)
+        root_element = ElementTree.fromstring(xsd_without_xs)
+        tablename = root_element.find('element').attrib['name']
+        table_comment = root_element.find('./element//complexType//documentation').text
+        return tablename, table_comment
 
 
-    def get_tablename(self, xml_string):
-        xml = ElementTree.fromstring(xml_string)
-        return xml.findall('element')[0].attrib['name']
+    def get_createtable_string(self):
+        xsd_without_xs = self.exclude_xs(self.xml_string)
+        root_element = ElementTree.fromstring(xsd_without_xs)
 
-    def get_attribute_info(self, block):
-        if block.tag == 'attribute':
-            block_info = {}
+        tablename = root_element.find('element').attrib['name']
 
+        attributes = root_element.findall('.//attribute')
 
+        sql = 'CREATE TABLE {} (\n'.format(tablename)
+        for attribute in attributes:
+            if Attribute.Attribute.this_type(attribute):
+                params = Attribute.determine_type(attribute).get_params()
+                if params['type'] == Attribute.AString.TYPE:
+                    sql += '"{}" VARCHAR{},\n'.format(params['name'].lower(),
+                                                      '({})'.format(params['length']) if 'length' in params else ''
+                                                      )
+                if params['type'] == Attribute.AInteger.TYPE:
+                    sql += '"{}" INTEGER,\n'.format(params['name'].lower())
+                if params['type'] == Attribute.ALong.TYPE:
+                    sql += '"{}" BIGINT,\n'.format(params['name'].lower())
+                if params['type'] == Attribute.ADate.TYPE:
+                    sql += '"{}" DATE,\n'.format(params['name'].lower())
+                if params['type'] == Attribute.ABoolean.TYPE:
+                    sql += '"{}" BOOLEAN,\n'.format(params['name'].lower())
+        sql = sql[0:-2] + ');\n'
+        return sql
 
+    def get_comment_string(self):
+        xsd_without_xs = self.exclude_xs(self.xml_string)
+        root_element = ElementTree.fromstring(xsd_without_xs)
 
+        tablename = root_element.find('element').attrib['name']
+        table_comment = root_element.find('./element//complexType//documentation').text
+        sql = "comment on table {} is '{}';\n".format(tablename, table_comment)
+        attributes = root_element.findall('.//attribute')
+        for attribute in attributes:
+            if Attribute.Attribute.this_type(attribute):
+                params = Attribute.determine_type(attribute).get_params()
+                sql += "comment on column {}.{} is '{}';\n".format(tablename,
+                                                                   params['name'].lower(),
+                                                                   params['documentation'])
+        return sql
 
-
-
-
-
+    # def validate(self, xml_path):
+    #     return self.schema.validate(xml_path)
 
 if __name__ =='__main__':
-     xsd = XSD(r'D:\Поиск адресов\Новая папка\xsd','MUN_HIERARCHY',shortname=True, encoding='utf-8')
-
-     tc = TableCreator(xsd)
-
-     #print(xsd.get_tablename())
-     #xsd._get_schema()
+    filenames = ['AS_ADDR_OBJ_2',
+                 'AS_ADDR_OBJ_DIVISION',
+                 'AS_ADDR_OBJ_TYPES',
+                 'AS_ADM_HIERARCHY',
+                 'AS_APARTMENT_TYPES',
+                 'AS_APARTMENTS',
+                 'AS_CARPLACES',
+                 'AS_CHANGE_HISTORY',
+                 'AS_HOUSE_TYPES',
+                 'AS_HOUSES',
+                 'AS_MUN_HIERARCHY',
+                 'AS_NORMATIVE_DOCS',
+                 'AS_NORMATIVE_DOCS_KINDS',
+                 'AS_NORMATIVE_DOCS_TYPES',
+                 'AS_OBJECT_LEVELS',
+                 'AS_OPERATION_TYPES',
+                 'AS_PARAM',
+                 'AS_PARAM_TYPES',
+                 'AS_REESTR_OBJECTS',
+                 'AS_ROOM_TYPES',
+                 'AS_ROOMS',
+                 'AS_STEADS']
+    filenames =[]
+    folder = r'D:\Поиск адресов\Новая папка\xsd'
+    for file in os.listdir(folder):
+        filenames.append(file)
+    print(filenames)
+    xsd_list = []
+    for filename in filenames:
+        xsd = XsdReader(r'D:\Поиск адресов\Новая папка\xsd',filename,isShortFilename=True, encoding='utf-8')
+        xsd_list.append(xsd)
+        print(xsd.get_createtable_string())
+        print(xsd.get_comment_string())
 
