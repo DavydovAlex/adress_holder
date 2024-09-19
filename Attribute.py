@@ -4,44 +4,71 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
 
+def is_attribute(element: Element):
+    return element.tag == 'attribute'
+
+
+class DB_TYPES:
+    STRING = 'VARCHAR'
+    INTEGER = 'INTEGER'
+    LONG = 'BIGINT'
+    DATE = 'DATE'
+    BOOLEAN = 'BOOLEAN'
+
+class TYPES:
+    STRING = 'string'
+    INTEGER = 'integer'
+    LONG = 'long'
+    DATE = 'date'
+    BOOLEAN = 'boolean'
+
+    TYPES_LIST = [STRING,
+                  INTEGER,
+                  LONG,
+                  DATE,
+                  BOOLEAN]
+
+    @classmethod
+    def is_existed_type(cls, type_string):
+        for type_ in cls.TYPES_LIST:
+            if type_string == type_:
+                return True
+        return False
+
+
+class AttributeCreator:
+
+    @staticmethod
+    def get(element: Element):
+        types_class_list = [AInteger,
+                            ALong,
+                            ADate,
+                            AString,
+                            ABoolean]
+        for cls in types_class_list:
+            if cls.get_type(element) == cls.TYPE:
+                return cls(element)
+        return AString(element)
+
 
 
 
 class Attribute(abc.ABC):
-    TYPE = 'attribute'
-
-    class TYPES:
-        STRING = 'string'
-        INTEGER = 'integer'
-        LONG = 'long'
-        DATE = 'date'
-        BOOLEAN = 'boolean'
-
-    class DB_TYPES:
-        STRING = 'VARCHAR'
-        INTEGER = 'INTEGER'
-        LONG = 'BIGINT'
-        DATE = 'DATE'
-        BOOLEAN = 'BOOLEAN'
+    TYPE = None
+    DB_TYPE = None
 
     def __init__(self, element: Element):
-        self.element = element
-        self.name = self.get_name()
-        self.use = self.get_use()
-        self.documentation = self.get_documentation()
-        self.enumeration = None
-        self.pattern = None
-        self.totalDigits = None
-        self.minLength = None
-        self.maxLength = None
-        self.length = None
+        if is_attribute(element):
+            self.element = element
+            self.name = element.attrib['name']
+            self.use = element.attrib['use']
+            self.comment = element.find('.//documentation').text
+            self.length = None
+        else:
+            raise Exception('Данный блок xsd файла, не может быть преобразован в Attribute')
 
-    def get_documentation(self):
-        doc_attr = self.element.find('.//documentation')
-        return doc_attr.text
-
-    def get_value(self, param):
-        param_search = self.element.find('.//' + param)
+    def _get_value(self, tag_name):
+        param_search = self.element.find('.//' + tag_name)
         if param_search is not None:
             return param_search.attrib['value']
         else:
@@ -51,17 +78,31 @@ class Attribute(abc.ABC):
         if Attribute.TYPE is cls.TYPE:
             raise NotImplementedError(
                 "Attribute '{}' has not been overriden in class '{}'" \
-                .format('var', cls.__name__)
+                    .format('var', cls.__name__)
+            )
+        if Attribute.DB_TYPE is cls.DB_TYPE:
+            raise NotImplementedError(
+                "Attribute '{}' has not been overriden in class '{}'" \
+                    .format('var', cls.__name__)
             )
 
-    def get_name(self):
-        return self.element.attrib['name']
-
-    def get_use(self):
-        return self.element.attrib['use']
-
-    def print(self):
-        print(self.__dict__)
+    @classmethod
+    def get_type(cls, element: Element) -> str:
+        type_ = None
+        if 'type' in element.attrib:
+            type_ = element.attrib['type']
+            if not TYPES.is_existed_type(type_):
+                raise Exception('Тип {} не определен в TYPES'.format(type_))
+        else:
+            for child in element.findall('.//restriction'):
+                type_ = child.attrib['base']
+                if not TYPES.is_existed_type(type_):
+                    raise Exception('Тип {} не определен в TYPES'.format(type_))
+                break
+        if type_ is not None:
+            return type_
+        else:
+            return TYPES.STRING
 
     @classmethod
     def this_type(cls, element: Element):
@@ -78,104 +119,38 @@ class Attribute(abc.ABC):
             return element.tag == 'attribute'
 
 
-
-    @abc.abstractmethod
-    def get_params(self):
-        params = dict()
-        params['type'] = self.TYPE
-        params['name'] = self.name
-        params['use'] = self.use
-        params['documentation'] = self.documentation
-        return params
-
-
-
 class AInteger(Attribute):
-    TYPE = T_INTEGER
-
-    def __init__(self, element: Element):
-        super().__init__(element)
-        self.enumeration = self._get_enumeration()
-        self.pattern = super().get_value('pattern')
-        self.totalDigits = super().get_value('totalDigits')
-
-    def _get_enumeration(self):
-        enumeration = []
-        for child in self.element.findall('.//enumeration'):
-            enumeration.append(child.attrib['value'])
-        if len(enumeration) > 0:
-            return enumeration
-        else:
-            return None
-
-    def get_params(self):
-        params = super().get_params()
-        return params
+    TYPE = TYPES.INTEGER
+    DB_TYPE = DB_TYPES.INTEGER
 
 
 class ALong(Attribute):
-    TYPE = T_LONG
-    def __init__(self,element: Element):
-        super().__init__(element)
-        self.totalDigits = super().get_value('totalDigits')
-
-    def get_params(self):
-        params = super().get_params()
-        return params
+    TYPE = TYPES.LONG
+    DB_TYPE = DB_TYPES.LONG
 
 
 class ADate(Attribute):
-    TYPE = T_DATE
-    def __init__(self, element: Element):
-        super().__init__(element)
-
-    def get_params(self):
-        params = super().get_params()
-        return params
-
-
-class AString(Attribute):
-    TYPE = T_STRING
-    def __init__(self, element: Element):
-        super().__init__(element)
-        self.length = super().get_value('length')
-        self.minLength = super().get_value('minLength')
-        self.maxLength = super().get_value('maxLength')
-        self.pattern = super().get_value('pattern')
-
-    def get_params(self):
-        params = super().get_params()
-        if self.length or self.maxLength:
-            params['length'] = self.length or self.maxLength
-        return params
+    TYPE = TYPES.DATE
+    DB_TYPE = DB_TYPES.DATE
 
 
 class ABoolean(Attribute):
-    TYPE = T_BOOLEAN
+    TYPE = TYPES.BOOLEAN
+    DB_TYPE = DB_TYPES.BOOLEAN
+
+
+class AString(Attribute):
+    TYPE = TYPES.STRING
+    DB_TYPE = DB_TYPES.STRING
+
     def __init__(self, element: Element):
         super().__init__(element)
+        self.length = self.__get_length()
 
-    def get_params(self):
-        params = super().get_params()
-        return params
-
-
-def determine_type(attribute: Element ):
-    att_types_list = [AInteger,
-                      ALong,
-                      ADate,
-                      AString,
-                      ABoolean]
-    for cls in att_types_list:
-        if cls.this_type(attribute):
-            return cls(attribute)
-    return AString(attribute)
-
-
-
-
-
-
+    def __get_length(self):
+        length = self._get_value('length')
+        max_length = self._get_value('maxLength')
+        return length or max_length
 
 
 

@@ -44,9 +44,9 @@ class XsdReader:
         attributes = root_element.findall('.//attribute')
         columns = []
         for attribute in attributes:
-            if Attribute.Attribute.this_type(attribute):
-                params = Attribute.determine_type(attribute).get_params()
-                columns.append(params)
+            if Attribute.is_attribute(attribute):
+                attribute_class = Attribute.AttributeCreator.get(attribute)
+                columns.append(attribute_class)
         return columns
 
     def get_table_info(self):
@@ -57,51 +57,7 @@ class XsdReader:
         return tablename, table_comment
 
 
-    def get_createtable_string(self):
-        xsd_without_xs = self.exclude_xs(self.xml_string)
-        root_element = ElementTree.fromstring(xsd_without_xs)
 
-        tablename = root_element.find('element').attrib['name']
-
-        attributes = root_element.findall('.//attribute')
-
-        sql = 'CREATE TABLE {} (\n'.format(tablename)
-        for attribute in attributes:
-            if Attribute.Attribute.this_type(attribute):
-                params = Attribute.determine_type(attribute).get_params()
-                if params['type'] == Attribute.AString.TYPE:
-                    sql += '"{}" VARCHAR{},\n'.format(params['name'].lower(),
-                                                      '({})'.format(params['length']) if 'length' in params else ''
-                                                      )
-                if params['type'] == Attribute.AInteger.TYPE:
-                    sql += '"{}" INTEGER,\n'.format(params['name'].lower())
-                if params['type'] == Attribute.ALong.TYPE:
-                    sql += '"{}" BIGINT,\n'.format(params['name'].lower())
-                if params['type'] == Attribute.ADate.TYPE:
-                    sql += '"{}" DATE,\n'.format(params['name'].lower())
-                if params['type'] == Attribute.ABoolean.TYPE:
-                    sql += '"{}" BOOLEAN,\n'.format(params['name'].lower())
-        sql = sql[0:-2] + ');\n'
-        return sql
-
-    def get_comment_string(self):
-        xsd_without_xs = self.exclude_xs(self.xml_string)
-        root_element = ElementTree.fromstring(xsd_without_xs)
-
-        tablename = root_element.find('element').attrib['name']
-        table_comment = root_element.find('./element//complexType//documentation').text
-        sql = "comment on table {} is '{}';\n".format(tablename, table_comment)
-        attributes = root_element.findall('.//attribute')
-        for attribute in attributes:
-            if Attribute.Attribute.this_type(attribute):
-                params = Attribute.determine_type(attribute).get_params()
-                sql += "comment on column {}.{} is '{}';\n".format(tablename,
-                                                                   params['name'].lower(),
-                                                                   params['documentation'])
-        return sql
-
-    # def validate(self, xml_path):
-    #     return self.schema.validate(xml_path)
 
 if __name__ =='__main__':
     filenames = ['AS_ADDR_OBJ_2',
