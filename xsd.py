@@ -9,41 +9,44 @@ from xml.etree.ElementTree import Element
 from lxml import etree
 import re
 import Attribute
+from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ANY_TYPE, XSD_SIMPLE_TYPE, XSD_PATTERN, \
+    XSD_ANY_ATOMIC_TYPE, XSD_ATTRIBUTE, XSD_ATTRIBUTE_GROUP, XSD_ANY_ATTRIBUTE, \
+    XSD_MIN_INCLUSIVE, XSD_MIN_EXCLUSIVE, XSD_MAX_INCLUSIVE, XSD_MAX_EXCLUSIVE, \
+    XSD_LENGTH, XSD_MIN_LENGTH, XSD_MAX_LENGTH, XSD_WHITE_SPACE, XSD_ENUMERATION, \
+    XSD_LIST, XSD_ANY_SIMPLE_TYPE, XSD_UNION, XSD_RESTRICTION, XSD_ANNOTATION, \
+    XSD_ASSERTION, XSD_ID, XSD_IDREF, XSD_FRACTION_DIGITS, XSD_TOTAL_DIGITS, \
+    XSD_EXPLICIT_TIMEZONE, XSD_ERROR, XSD_ASSERT, XSD_QNAME
+
 
 class XsdReader:
     def __init__(self, path: Path, encoding,):
         try:
             self.path = path
             self.encoding = encoding
-
-            self.schema = self.get_schema()
-            self.raw_string = self.to_string()
+            self.schema = self._get_schema()
         except Exception as e:
             raise e
 
-    def get_schema(self) -> xmlschema.XMLSchema:
+    def _get_schema(self) -> xmlschema.XMLSchema:
         return xmlschema.XMLSchema(self.path)
 
-    def get_element_tree(self):
-        return ElementTree.parse(self.path)
-
-    def to_string(self):
-        with open(self.path, encoding=self.encoding) as f:
-            return f.read()
-
-
-    def exclude_xs_prefix(self, xsd_string):
-        return self.exclude_prefix(xsd_string, 'xs')
-
-    def exclude_prefix(self, xsd_string, prefix):
-        return re.sub(prefix + ':', '', xsd_string)
 
     def get_columns(self) -> list:
+        comp = self.schema.iter()
+
+        for c in self.schema.iterchildren():
+            print(type(c))
+            for i in c.iter():
+                print(i)
+           # print(c)
         xsd_without_xs = self.exclude_xs_prefix(self.raw_string)
         root_element = ElementTree.fromstring(xsd_without_xs)
         attributes = root_element.findall('.//attribute')
+
         columns = []
         for attribute in attributes:
+
+            print(xmlschema.validators.attributes.XSD_ATTRIBUTE)
             if Attribute.is_attribute(attribute):
                 attribute_class = Attribute.AttributeCreator.get(attribute)
                 columns.append(attribute_class)
@@ -60,37 +63,8 @@ class XsdReader:
 
 
 if __name__ =='__main__':
-    filenames = ['AS_ADDR_OBJ_2',
-                 'AS_ADDR_OBJ_DIVISION',
-                 'AS_ADDR_OBJ_TYPES',
-                 'AS_ADM_HIERARCHY',
-                 'AS_APARTMENT_TYPES',
-                 'AS_APARTMENTS',
-                 'AS_CARPLACES',
-                 'AS_CHANGE_HISTORY',
-                 'AS_HOUSE_TYPES',
-                 'AS_HOUSES',
-                 'AS_MUN_HIERARCHY',
-                 'AS_NORMATIVE_DOCS',
-                 'AS_NORMATIVE_DOCS_KINDS',
-                 'AS_NORMATIVE_DOCS_TYPES',
-                 'AS_OBJECT_LEVELS',
-                 'AS_OPERATION_TYPES',
-                 'AS_PARAM',
-                 'AS_PARAM_TYPES',
-                 'AS_REESTR_OBJECTS',
-                 'AS_ROOM_TYPES',
-                 'AS_ROOMS',
-                 'AS_STEADS']
-    filenames =[]
-    folder = r'D:\Поиск адресов\Новая папка\xsd'
-    for file in os.listdir(folder):
-        filenames.append(file)
-    print(filenames)
-    xsd_list = []
-    for filename in filenames:
-        xsd = XsdReader(r'D:\Поиск адресов\Новая папка\xsd',filename,isShortFilename=True, encoding='utf-8')
-        xsd_list.append(xsd)
-        print(xsd.get_createtable_string())
-        print(xsd.get_comment_string())
+    xsd = XsdReader(r'D:\Поиск адресов\Новая папка\xsd\AS_MUN_HIERARCHY_2_251_10_04_01_01.xsd', encoding='utf-8')
+    print(xsd.get_columns())
+    print(xsd.get_comment_string())
+
 
