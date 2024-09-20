@@ -19,3 +19,15 @@ from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ANY_TYPE, XSD_S
 
 
 
+class XsdConverter:
+    pass
+
+
+
+
+class XsdObject:
+    pass
+
+
+class Attribute:
+    pass

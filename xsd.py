@@ -18,6 +18,7 @@ from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ANY_TYPE, XSD_S
     XSD_EXPLICIT_TIMEZONE, XSD_ERROR, XSD_ASSERT, XSD_QNAME
 
 
+
 class XsdReader:
     def __init__(self, path: Path, encoding,):
         try:
@@ -32,12 +33,11 @@ class XsdReader:
 
 
     def get_columns(self) -> list:
-        comp = self.schema.iter()
+        comp = self.schema.
 
-        for c in self.schema.iterchildren():
+        for c in comp:
+            print(c)
             print(type(c))
-            for i in c.iter():
-                print(i)
            # print(c)
         xsd_without_xs = self.exclude_xs_prefix(self.raw_string)
         root_element = ElementTree.fromstring(xsd_without_xs)
