@@ -18,6 +18,7 @@ from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ANY_TYPE, XSD_S
     XSD_EXPLICIT_TIMEZONE, XSD_ERROR, XSD_ASSERT, XSD_QNAME
 
 
+
 class XsdReader:
     def __init__(self, path: Path, encoding,):
         try:
