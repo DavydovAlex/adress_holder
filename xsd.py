@@ -20,35 +20,32 @@ from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ANY_TYPE, XSD_S
 
 
 class XsdReader:
-    def __init__(self, path: Path, encoding,):
+    def __init__(self, path: Path, encoding='utf-8'):
         try:
-            self.path = path
+            self.path: Path = path
             self.encoding = encoding
             self.schema = self._get_schema()
+            self.root: Element = self._get_root_element()
         except Exception as e:
             raise e
 
     def _get_schema(self) -> xmlschema.XMLSchema:
         return xmlschema.XMLSchema(self.path)
 
+    def _get_root_element(self):
+        return ElementTree.parse(self.path).getroot()
+
 
     def get_columns(self) -> list:
-        comp = self.schema.
 
-        for c in comp:
-            print(c)
-            print(type(c))
-           # print(c)
-        xsd_without_xs = self.exclude_xs_prefix(self.raw_string)
-        root_element = ElementTree.fromstring(xsd_without_xs)
-        attributes = root_element.findall('.//attribute')
+        attributes = Attribute.attributes_iter(self.root)
 
         columns = []
         for attribute in attributes:
 
-            print(xmlschema.validators.attributes.XSD_ATTRIBUTE)
+            print(attribute)
             if Attribute.is_attribute(attribute):
-                attribute_class = Attribute.AttributeCreator.get(attribute)
+                attribute_class = Attribute.get(attribute)
                 columns.append(attribute_class)
         return columns
 
@@ -63,8 +60,9 @@ class XsdReader:
 
 
 if __name__ =='__main__':
-    xsd = XsdReader(r'D:\Поиск адресов\Новая папка\xsd\AS_MUN_HIERARCHY_2_251_10_04_01_01.xsd', encoding='utf-8')
+    print('{{{0}}}{1}'.format('1','2'))
+    xsd = XsdReader(r'D:\xsd\AS_MUN_HIERARCHY_2_251_10_04_01_01.xsd', encoding='utf-8')
     print(xsd.get_columns())
-    print(xsd.get_comment_string())
+
 
 

@@ -2,18 +2,35 @@ import abc
 
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
+from typing import Iterator
+from xmlschema.validators.simple_types import XSD_NAMESPACE,  XSD_ATTRIBUTE
+
+_XSD_TEMPLATE = './/{{' + XSD_NAMESPACE + '}}{}'
 
 
 def is_attribute(element: Element):
-    return element.tag == 'attribute'
+    return element.tag == XSD_ATTRIBUTE
 
 
-class DB_TYPES:
-    STRING = 'VARCHAR'
-    INTEGER = 'INTEGER'
-    LONG = 'BIGINT'
-    DATE = 'DATE'
-    BOOLEAN = 'BOOLEAN'
+def attributes_iter(element: Element) -> Iterator[Element]:
+
+    attributes = element.findall('.//{}'.format(XSD_ATTRIBUTE))
+    for attribute in attributes:
+        yield attribute
+
+
+def get(element: Element):
+    types_class_list = [AInteger,
+                        ALong,
+                        ADate,
+                        AString,
+                        ABoolean]
+    for cls in types_class_list:
+        if cls.this_type(element):
+            return cls(element)
+    return AString(element)
+
+
 
 class TYPES:
     STRING = 'string'
@@ -36,39 +53,42 @@ class TYPES:
         return False
 
 
-class AttributeCreator:
-
-    @staticmethod
-    def get(element: Element):
-        types_class_list = [AInteger,
-                            ALong,
-                            ADate,
-                            AString,
-                            ABoolean]
-        for cls in types_class_list:
-            if cls.get_type(element) == cls.TYPE:
-                return cls(element)
-        return AString(element)
-
-
-
-
 class Attribute(abc.ABC):
     TYPE = None
-    DB_TYPE = None
 
     def __init__(self, element: Element):
         if is_attribute(element):
             self.element = element
-            self.name = element.attrib['name']
-            self.use = element.attrib['use']
-            self.comment = element.find('.//documentation').text
+            self.name = self._get_parameter('name')
+            self.use = self._get_parameter('use')
+            self.comment = self._get_comment()
             self.length = None
         else:
             raise Exception('Данный блок xsd файла, не может быть преобразован в Attribute')
 
-    def _get_value(self, tag_name):
-        param_search = self.element.find('.//' + tag_name)
+    def _get_comment(self) -> str:
+        comment_element = self.element.find(_XSD_TEMPLATE.format('documentation'))
+        if comment_element is not None:
+            return comment_element.text
+        else:
+            return ''
+
+    def _get_parameter(self, param) -> str:
+        if self._has_parameter(param):
+            return self.element.attrib[param]
+        else:
+            raise Exception('Не удается обнаружить обязательный параметр "{}"'.format(param))
+
+
+    def _has_parameter(self, param) -> bool:
+        if param in self.element.attrib:
+            return True
+        else:
+            return False
+
+
+    def _get_value(self, tag_name) -> str | None:
+        param_search = self.element.find(_XSD_TEMPLATE.format(tag_name))
         if param_search is not None:
             return param_search.attrib['value']
         else:
@@ -80,68 +100,39 @@ class Attribute(abc.ABC):
                 "Attribute '{}' has not been overriden in class '{}'" \
                     .format('var', cls.__name__)
             )
-        if Attribute.DB_TYPE is cls.DB_TYPE:
-            raise NotImplementedError(
-                "Attribute '{}' has not been overriden in class '{}'" \
-                    .format('var', cls.__name__)
-            )
 
-    @classmethod
-    def get_type(cls, element: Element) -> str:
-        type_ = None
-        if 'type' in element.attrib:
-            type_ = element.attrib['type']
-            if not TYPES.is_existed_type(type_):
-                raise Exception('Тип {} не определен в TYPES'.format(type_))
-        else:
-            for child in element.findall('.//restriction'):
-                type_ = child.attrib['base']
-                if not TYPES.is_existed_type(type_):
-                    raise Exception('Тип {} не определен в TYPES'.format(type_))
-                break
-        if type_ is not None:
-            return type_
-        else:
-            return TYPES.STRING
 
     @classmethod
     def this_type(cls, element: Element):
-        if cls.TYPE != Attribute.TYPE:
-            if 'type' in element.attrib:
-                if element.attrib['type'] == cls.TYPE:
-                    return True
-            else:
-                for child in element.findall('.//restriction'):
+        if 'type' in element.attrib:
+            if element.attrib['type'] == cls.TYPE:
+                return True
+        else:
+            for child in element.findall(_XSD_TEMPLATE.format('restriction')):
+                if 'base' in child.attrib:
                     if child.attrib['base'] == cls.TYPE:
                         return True
-                return False
-        else:
-            return element.tag == 'attribute'
+            return False
 
 
 class AInteger(Attribute):
     TYPE = TYPES.INTEGER
-    DB_TYPE = DB_TYPES.INTEGER
 
 
 class ALong(Attribute):
     TYPE = TYPES.LONG
-    DB_TYPE = DB_TYPES.LONG
 
 
 class ADate(Attribute):
     TYPE = TYPES.DATE
-    DB_TYPE = DB_TYPES.DATE
 
 
 class ABoolean(Attribute):
     TYPE = TYPES.BOOLEAN
-    DB_TYPE = DB_TYPES.BOOLEAN
 
 
 class AString(Attribute):
     TYPE = TYPES.STRING
-    DB_TYPE = DB_TYPES.STRING
 
     def __init__(self, element: Element):
         super().__init__(element)
