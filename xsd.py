@@ -63,6 +63,9 @@ if __name__ =='__main__':
     print('{{{0}}}{1}'.format('1','2'))
     xsd = XsdReader(r'D:\xsd\AS_MUN_HIERARCHY_2_251_10_04_01_01.xsd', encoding='utf-8')
     print(xsd.get_columns())
-
+    xsd_object = Attribute.XsdParser(xsd.root)
+    print(xsd_object.attributes)
+    print(xsd_object.name)
+    print(xsd_object.comment)
 
 

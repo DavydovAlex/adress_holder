@@ -5,15 +5,16 @@ from xml.etree.ElementTree import Element
 from typing import Iterator
 from xmlschema.validators.simple_types import XSD_NAMESPACE,  XSD_ATTRIBUTE
 
-_XSD_TEMPLATE = './/{{' + XSD_NAMESPACE + '}}{}'
+_XSD_TEMPLATE = '{{' + XSD_NAMESPACE + '}}{}'
+_XSD_TEMPLATE_FIND = './/' + _XSD_TEMPLATE
 
-
+_XSD_ELEMENT = _XSD_TEMPLATE.format('element')
+_XSD_COMPLEX_TYPE = _XSD_TEMPLATE.format('complexType')
 def is_attribute(element: Element):
     return element.tag == XSD_ATTRIBUTE
 
 
 def attributes_iter(element: Element) -> Iterator[Element]:
-
     attributes = element.findall('.//{}'.format(XSD_ATTRIBUTE))
     for attribute in attributes:
         yield attribute
@@ -29,7 +30,6 @@ def get(element: Element):
         if cls.this_type(element):
             return cls(element)
     return AString(element)
-
 
 
 class TYPES:
@@ -67,7 +67,7 @@ class Attribute(abc.ABC):
             raise Exception('Данный блок xsd файла, не может быть преобразован в Attribute')
 
     def _get_comment(self) -> str:
-        comment_element = self.element.find(_XSD_TEMPLATE.format('documentation'))
+        comment_element = self.element.find(_XSD_TEMPLATE_FIND.format('documentation'))
         if comment_element is not None:
             return comment_element.text
         else:
@@ -88,7 +88,7 @@ class Attribute(abc.ABC):
 
 
     def _get_value(self, tag_name) -> str | None:
-        param_search = self.element.find(_XSD_TEMPLATE.format(tag_name))
+        param_search = self.element.find(_XSD_TEMPLATE_FIND.format(tag_name))
         if param_search is not None:
             return param_search.attrib['value']
         else:
@@ -108,7 +108,7 @@ class Attribute(abc.ABC):
             if element.attrib['type'] == cls.TYPE:
                 return True
         else:
-            for child in element.findall(_XSD_TEMPLATE.format('restriction')):
+            for child in element.findall(_XSD_TEMPLATE_FIND.format('restriction')):
                 if 'base' in child.attrib:
                     if child.attrib['base'] == cls.TYPE:
                         return True
@@ -145,3 +145,34 @@ class AString(Attribute):
 
 
 
+class XsdParser:
+    def __init__(self, root: Element):
+        self.root = root
+        self.attributes = self._get_attributes()
+        self.name = self._get_name()
+        self.comment = self._get_comment()
+
+
+    def _get_attributes(self):
+        elements = attributes_iter(self.root)
+        attribute_list = []
+        for element in elements:
+            attribute_list.append(get(element))
+        return attribute_list
+
+    def _get_name(self):
+        tablename_element = self.root.find(_XSD_TEMPLATE_FIND.format('element'))
+        if 'name' in tablename_element.attrib:
+            tablename = tablename_element.attrib['name']
+            return tablename
+        else:
+            raise Exception(
+                'Не удается обнаружить element, имеющий аттрибут "name", необходимо проверить структуру файла')
+
+    def _get_comment(self):
+        table_comment = self.root.find(_XSD_TEMPLATE_FIND.format('documentation'))
+        if hasattr(table_comment, 'text'):
+            comment = table_comment.text
+            return comment
+        else:
+            return ''
