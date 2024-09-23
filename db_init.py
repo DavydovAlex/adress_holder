@@ -1,7 +1,11 @@
 import re
 from pathlib import Path
-import Attribute
-import xsd
+
+from xsdreader import xsd
+from xsdreader.sql import create_table_sql,create_comments_sql
+
+import psycopg2 as pg
+
 
 
 class TableCreator:
@@ -36,29 +40,12 @@ class TableCreator:
         self.__data_path = value
 
     def get_xsd(self, encoding):
-        self.xsd = xsd.XsdReader(self.__xsd_path, encoding)
+        self.xsd = xsdreader.XsdReader(self.__xsd_path, encoding)
         return self.xsd
 
-    def generate_create_table_sql(self):
-        columns: list[Attribute.Attribute] = self.xsd.get_columns()
-        sql = 'CREATE TABLE {} (\n'.format(self.name)
-        for column in columns:
-            sql += '"{}" {}{},\n'.format(column.name.lower(),
-                                         column.DB_TYPE,
-                                         '({})'.format(column.length) if column.length is not None else '')
-        sql = sql[0:-2] + ');\n'
-        sql += self.generate_comments_sql()
-        return sql
 
-    def generate_comments_sql(self):
-        _, comment = self.xsd.get_table_info()
-        sql = "comment on table {} is '{}';\n".format(self.name, comment)
-        columns: list[Attribute.Attribute] = self.xsd.get_columns()
-        for column in columns:
-            sql += "comment on column {}.{} is '{}';\n".format(self.name,
-                                                               column.name.lower(),
-                                                               column.comment)
-        return sql
+
+
 
     def xml_iter(self):
         if self.xsd.schema.is_valid(self.data_path):

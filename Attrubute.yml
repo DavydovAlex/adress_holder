@@ -1,7 +1,0 @@
-TYPES_CORRESPONDENCE:
-  POSTGRES:
-    INTEGER: integer
-    BIGINT: long
-    DATE: date
-    VARCHAR: string
-    BOOLEAN: boolean

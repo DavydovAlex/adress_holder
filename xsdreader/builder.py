@@ -1,6 +1,5 @@
 import abc
-
-from xml.etree import ElementTree
+import re
 from xml.etree.ElementTree import Element
 from typing import Iterator
 from xmlschema.validators.simple_types import XSD_NAMESPACE,  XSD_ATTRIBUTE
@@ -10,7 +9,9 @@ _XSD_TEMPLATE_FIND = './/' + _XSD_TEMPLATE
 
 _XSD_ELEMENT = _XSD_TEMPLATE.format('element')
 _XSD_COMPLEX_TYPE = _XSD_TEMPLATE.format('complexType')
-def is_attribute(element: Element):
+
+
+def is_attribute(element: Element) -> bool:
     return element.tag == XSD_ATTRIBUTE
 
 
@@ -64,7 +65,19 @@ class Attribute(abc.ABC):
             self.comment = self._get_comment()
             self.length = None
         else:
-            raise Exception('Данный блок xsd файла, не может быть преобразован в Attribute')
+            raise Exception('Данный блок xsdreader файла, не может быть преобразован в Attribute')
+
+    @property
+    def db_type(self):
+        if hasattr(self, '_db_type'):
+            return self._db_type
+        else:
+            raise AttributeError("Поле '{}' класса '{}' не определено".format('db_type', type(self)))
+
+    @db_type.setter
+    def db_type(self, value):
+        self._db_type = value
+
 
     def _get_comment(self) -> str:
         comment_element = self.element.find(_XSD_TEMPLATE_FIND.format('documentation'))
@@ -105,12 +118,12 @@ class Attribute(abc.ABC):
     @classmethod
     def this_type(cls, element: Element):
         if 'type' in element.attrib:
-            if element.attrib['type'] == cls.TYPE:
+            if re.sub('xs:','',element.attrib['type']) == cls.TYPE:
                 return True
         else:
             for child in element.findall(_XSD_TEMPLATE_FIND.format('restriction')):
                 if 'base' in child.attrib:
-                    if child.attrib['base'] == cls.TYPE:
+                    if re.sub('xs:', '', child.attrib['base']) == cls.TYPE:
                         return True
             return False
 
@@ -145,7 +158,7 @@ class AString(Attribute):
 
 
 
-class XsdParser:
+class XsdObject:
     def __init__(self, root: Element):
         self.root = root
         self.attributes = self._get_attributes()
