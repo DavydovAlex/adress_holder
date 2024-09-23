@@ -1,66 +1,43 @@
 import re
 from pathlib import Path
 
-from xsdreader import xsd
-from xsdreader.sql import create_table_sql,create_comments_sql
+from xsdreader.xsd import Xsd
+from xsdreader.sql import create_table_sql, create_comments_sql
 
 import psycopg2 as pg
 
+print(type(pg.connect()))
+def db_create():
+    pass
 
 
 class TableCreator:
 
     def __init__(self, tablename, xml_path: Path, xsd_path: Path):
         self.name = tablename
-        self.__data_path = xml_path
-        self.__xsd_path = xsd_path
+        self.xml_path = xml_path
+        self.xsd_path = xsd_path
+        self.xsd = Xsd(xsd_path)
 
-    @property
-    def schema(self):
-        return self.__schema
-
-    @schema.setter
-    def schema(self, value):
-        self.__schema = value
-
-    @property
-    def schema_path(self):
-        return self.__xsd_path
-
-    @schema_path.setter
-    def schema_path(self, value):
-        self.__schema_path = value
-
-    @property
-    def data_path(self):
-        return self.__data_path
-
-    @data_path.setter
-    def data_path(self, value):
-        self.__data_path = value
-
-    def get_xsd(self, encoding):
-        self.xsd = xsdreader.XsdReader(self.__xsd_path, encoding)
-        return self.xsd
+    def create_table(self,connection):
+        pass
 
 
+    def data_iter(self):
+        if not self.xsd.is_valid(self.xml_path):
+            raise Exception("Формат файла выходит за стандартный шаблон обработки")
+        data_dict = self.xsd.schema.to_dict(self.data_path)
+        if len(data_dict) == 1:
+            print(list(data_dict.keys())[0])
+            data_list = data_dict[list(data_dict.keys())[0]]
+            data_list_processed = []
+            for row in data_list:
+                row_dict_processed = dict()
+                for key, value in row.items():
+                    row_dict_processed[re.sub('@', '', key)] = value
+                yield row_dict_processed
+        else:
 
-
-
-    def xml_iter(self):
-        if self.xsd.schema.is_valid(self.data_path):
-            data_dict = self.xsd.schema.to_dict(self.data_path)
-            if len(data_dict) == 1:
-                print(list(data_dict.keys())[0])
-                data_list = data_dict[list(data_dict.keys())[0]]
-                data_list_processed = []
-                for row in data_list:
-                    row_dict_processed = dict()
-                    for key, value in row.items():
-                        row_dict_processed[re.sub('@', '', key)] = value
-                    yield row_dict_processed
-            else:
-                raise Exception("Формат файлы выходит за стандартный шаблон обработки")
 
 
 if __name__ == '__main__':

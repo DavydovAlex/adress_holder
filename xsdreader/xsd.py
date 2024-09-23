@@ -7,7 +7,7 @@ from xsdreader.sql import create_comments_sql, create_table_sql
 
 
 class Xsd:
-    def __init__(self, path: Path, encoding='utf-8'):
+    def __init__(self, path: Path):
         try:
             self.path: Path = path
             self.encoding = encoding
