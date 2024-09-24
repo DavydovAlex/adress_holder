@@ -1,5 +1,6 @@
 from xsdreader.builder import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
 from copy import deepcopy
+from xsdreader.xmlreader import DataRow,DataColumn
 
 
 def _add_db_pg_type(attribute: Attribute):
@@ -41,3 +42,14 @@ def create_comments_sql(obj: XsdObject, tablename=None):
                                                            column.name.lower(),
                                                            column.comment)
     return sql
+
+def insert_row_sql(row:DataRow , tablename):
+    columns_list = ['"'+col.name.lower()+'"' for col in row.columns]
+    columns_list_str = ','.join(columns_list)
+    columns_values_list = ["'"+str(col.value)+"'" for col in row.columns]
+    columns_values_list_str = ','.join(columns_values_list)
+    sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_list_str)
+    sql += 'VALUES ({})\n'.format(columns_values_list_str)
+    return sql
+
+
