@@ -22,6 +22,12 @@ class Xsd:
     def is_valid(self, xml_path: Path):
         return self.schema.is_valid(xml_path)
 
+    def create_table_sql(self):
+        table = create_table_sql(self.xsd_object)
+        comment = create_comments_sql(self.xsd_object)
+
+        return table + comment
+
     def _get_xml_data_list(self, xml_path: Path) -> list:
         if not self.is_valid(xml_path):
             raise Exception("XML файл не соотвествует схеме xsd")
