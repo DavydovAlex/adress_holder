@@ -52,4 +52,3 @@ def insert_row_sql(row:DataRow , tablename):
     sql += 'VALUES ({})\n'.format(columns_values_list_str)
     return sql
 
-

@@ -16,8 +16,8 @@ def get_env_data_as_dict(path: str) -> dict:
                 env_vars[row[0].strip()] = row[1].strip()
         return env_vars
 
-POSTGRES_DB = os.environ.get('POSTGRES_DB') if os.environ.get('POSTGRES_DB') \
-    else get_env_data_as_dict('.env')['POSTGRES_DB']
+POSTGRES_DB = (os.environ.get('POSTGRES_DB') if os.environ.get('POSTGRES_DB') \
+    else get_env_data_as_dict('.env')['POSTGRES_DB']).lower()
 POSTGRES_USER = os.environ.get('POSTGRES_USER') if os.environ.get('POSTGRES_USER') \
     else get_env_data_as_dict('.env')['POSTGRES_USER']
 POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD') if os.environ.get('POSTGRES_PASSWORD') \
@@ -50,7 +50,8 @@ class Connection:
         self.password = password
         self._connection = psycopg2.connect(database=database, user=user,
                                            host=host, password=password)
-        self._cursor =self._connection.cursor()
+        self._connection.autocommit = True
+        self._cursor = self._connection.cursor()
 
     def execute(self, sql):
         self._cursor.execute(sql)
@@ -74,17 +75,32 @@ class TableCreator:
         table = create_table_sql(self.xsd.xsd_object, self.tablename)
         commnents = create_comments_sql(self.xsd.xsd_object, self.tablename)
         connection.execute(table + commnents)
+        print("Table created {}".format(self.tablename))
 
     def fill_table(self, connection: Connection):
         for row in self.xsd.xml_iter(self.xml_path):
             sql = insert_row_sql(row, self.tablename)
             connection.execute(sql)
+            print(sql)
 
 
 
 if __name__ == '__main__':
+    import yaml
     db_create()
     create_schema()
+    with open(r'D:\Поиск адресов\Новая папка\init_data\config.yml') as f:
+        templates = yaml.safe_load(f)
+    tables = templates['files']
+    connection = Connection(host=HOST,database=POSTGRES_DB,user=POSTGRES_USER, password=POSTGRES_PASSWORD)
+    for key, value in tables.items():
+        tablename = key
+        xsd_path = r'D:\Поиск адресов\Новая папка\init_data\xsd' + '\\' + value['XSD']
+        xml_path = r'D:\Поиск адресов\Новая папка\init_data\xml' + '\\' + value['XML']
+        print(tablename, xsd_path, xml_path)
+        tc = TableCreator(tablename, xml_path, xsd_path)
+        tc.create_table(connection)
+        tc.fill_table(connection)
     # table = TableCreator('PARAMS',
     #                      Path(
     #                          r'D:\Поиск адресов\Новая папка\AS_PARAM_TYPES_20240905_750ec24d-b75f-4ff2-86d2-d9d8d1cf3530.XML'),
