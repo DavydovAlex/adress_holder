@@ -28,13 +28,23 @@ class DataColumn:
 class DataRow:
 
     def __init__(self, xsd_object: XsdObject =None):
-        self.columns = []
+        self._columns = []
         self._xsd_object =xsd_object
+
+    @property
+    def columns(self):
+        if self._xsd_object is not None:
+            return self._columns
+        return self._columns
+
+    @columns.setter
+    def columns(self, value):
+        raise Exception('Use "append()" to add column')
 
     def append(self, column: DataColumn):
         if self._xsd_object is not None:
             column.value = self.change_value_type(column, self._xsd_object)
-        self.columns.append(column)
+        self._columns.append(column)
 
     def change_value_type(self, column: DataColumn, xsd_object: XsdObject):
         columns_types = xsd_object.attributes

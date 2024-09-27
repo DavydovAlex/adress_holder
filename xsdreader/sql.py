@@ -52,3 +52,10 @@ def insert_row_sql(row:DataRow , tablename):
     sql += 'VALUES ({})\n'.format(columns_values_list_str)
     return sql
 
+def insert_rows_sql(rows: list[DataRow], tablename, table_structure:XsdObject):
+    columns_list = ['"'+col.name.lower()+'"' for col in table_structure.attributes]
+    columns_list_str = ','.join(columns_list)
+    sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_list_str)
+    for row in rows:
+
+
