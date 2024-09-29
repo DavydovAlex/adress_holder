@@ -40,19 +40,6 @@ class TYPES:
     DATE = 'date'
     BOOLEAN = 'boolean'
 
-    TYPES_LIST = [STRING,
-                  INTEGER,
-                  LONG,
-                  DATE,
-                  BOOLEAN]
-
-    @classmethod
-    def is_existed_type(cls, type_string):
-        for type_ in cls.TYPES_LIST:
-            if type_string == type_:
-                return True
-        return False
-
 
 class Attribute(abc.ABC):
     TYPE = None
@@ -77,6 +64,7 @@ class Attribute(abc.ABC):
     @db_type.setter
     def db_type(self, value):
         self._db_type = value
+        
 
 
     def _get_comment(self) -> str:
@@ -118,7 +106,7 @@ class Attribute(abc.ABC):
     @classmethod
     def this_type(cls, element: Element):
         if 'type' in element.attrib:
-            if re.sub('xs:','',element.attrib['type']) == cls.TYPE:
+            if re.sub('xs:','', element.attrib['type']) == cls.TYPE:
                 return True
         else:
             for child in element.findall(_XSD_TEMPLATE_FIND.format('restriction')):
@@ -181,6 +169,8 @@ class XsdObject:
         else:
             raise Exception(
                 'Не удается обнаружить element, имеющий аттрибут "name", необходимо проверить структуру файла')
+
+
 
     def _get_comment(self):
         table_comment = self.root.find(_XSD_TEMPLATE_FIND.format('documentation'))
