@@ -5,14 +5,10 @@ from dataclasses import dataclass
 import os.path
 import os
 import shutil
-CONFIG_FILE = 'extractor_config.yml'
 from pathlib import Path
+import pprint
 
-
-# with open(CONFIG_FILE, "r") as file:
-#     data = yaml.load(file, yaml.Loader)
-#     print(data)
-
+CONFIG_FILE = 'extractor_config.yml'
 
 @dataclass
 class ExtractedFile:
@@ -89,9 +85,23 @@ class Config:
     def path_to_extract(self):
         return self.__path_to_extract
 
+@dataclass
+class Directory:
+    xsd: str
+    xml: str
+    name: str
+
+@dataclass
+class ExtractedObject:
+    path: str
+    dirs: list[Directory]
+
 
 class Extractor:
     __config: Config
+    __extracted_object: ExtractedObject
+
+
     def __init__(self, config: Config):
         self.__config = config
 
@@ -99,6 +109,35 @@ class Extractor:
         self.make_catalog_tree()
         self.extract_xsd()
         self.extract_xml()
+        self.__extracted_object = self.__make_extracted_object()
+
+
+    def __make_extracted_object(self):
+        path = self.__config.path_to_extract
+        folders = []
+        for name in os.listdir(path):
+            if os.path.isdir(os.path.join(path, name)):
+                folders.append(name)
+        dirs = []
+        for folder in folders:
+            folder_path = os.path.join(path, folder)
+            files_list = os.listdir(folder_path)
+            xsd = ''
+            xml = ''
+            for file in files_list:
+                if Path(file).suffix.lower() == '.xsd':
+                    xsd = file
+                elif Path(file).suffix.lower() == '.xml':
+                    xml = file
+            dirs.append(Directory(xsd=xsd,
+                                     xml=xml,
+                                     name=folder))
+        return ExtractedObject(path=path,
+                               dirs=dirs)
+
+
+
+
 
     def make_catalog_tree(self):
         if not os.path.exists(self.__config.path_to_extract):
@@ -153,8 +192,6 @@ class Extractor:
             raise e
 
 
-
-
     def extract_xml(self):
         try:
             if not os.path.exists(self.__config.xml_archive):
@@ -176,7 +213,9 @@ class Extractor:
                 shutil.rmtree(self.__config.path_to_extract)
             raise e
 
-
+    @property
+    def extracted_object(self):
+        return self.__extracted_object
 
 
 
@@ -185,3 +224,4 @@ if __name__ == '__main__':
     config = Config(CONFIG_FILE)
     ex = Extractor(config)
     ex.extract()
+    pprint.pprint(ex.extracted_object)
