@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from xsdreader.builder import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.builder import XsdObject, ABoolean, ALong, AInteger, AString, ADate
 from datetime import datetime
 class DataColumn:
 

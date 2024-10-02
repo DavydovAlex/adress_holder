@@ -1,8 +1,7 @@
-import re
 from pathlib import Path
 import os
-from xsdreader.xsd import Xsd
-from xsdreader.sql import create_comments_sql, create_table_sql, insert_row_sql
+from app.xsdreader.xsd import Xsd
+from app.xsdreader.sql import create_comments_sql, create_table_sql, insert_row_sql
 import psycopg2
 
 def get_env_data_as_dict(path: str) -> dict:

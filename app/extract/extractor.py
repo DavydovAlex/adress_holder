@@ -1,5 +1,4 @@
 import zipfile
-import yaml
 import re
 from dataclasses import dataclass
 import os.path
@@ -7,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 import pprint
-from extract.config import  CONFIG_FILE, ExtractedFile, Config
+from app.extract.config import  CONFIG_FILE, Config
 
 
 
@@ -76,7 +75,6 @@ class Extractor:
     def __find_file(self, filelist: list[tuple], mask) -> tuple:
         matches = 0
         for path, name in filelist:
-
             if re.fullmatch(mask, name) is not None:
                 matches += 1
                 filename = name
@@ -94,7 +92,7 @@ class Extractor:
             files_list = []
             for file_path in zf.namelist():
                 if folder is None:
-                    if Path(file_path).parent == Path('..'):
+                    if Path(file_path).parent == Path(''):
                         files_list.append((file_path, file_path, ))
                 else:
                     if Path(file_path).parent == Path(str(folder)):

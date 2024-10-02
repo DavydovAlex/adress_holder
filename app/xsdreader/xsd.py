@@ -3,9 +3,9 @@ import xmlschema
 from pathlib import Path
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
-from xsdreader.builder import XsdObject
-from xsdreader.sql import create_comments_sql, create_table_sql, insert_row_sql
-from xsdreader.xmlreader import DataRow,DataColumn
+from app.xsdreader.builder import XsdObject
+from app.xsdreader.sql import create_comments_sql, create_table_sql, insert_row_sql
+from app.xsdreader.xmlreader import DataRow,DataColumn
 from typing import Iterator
 
 class Xsd:

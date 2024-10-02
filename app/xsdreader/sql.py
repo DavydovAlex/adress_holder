@@ -1,6 +1,6 @@
-from xsdreader.builder import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.builder import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
 from copy import deepcopy
-from xsdreader.xmlreader import DataRow,DataColumn
+from app.xsdreader.xmlreader import DataRow
 
 
 def _add_db_pg_type(attribute: Attribute):
