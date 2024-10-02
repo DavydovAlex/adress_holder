@@ -3,7 +3,9 @@ services:
     build: .
     command: python main.py
     volumes:
-      - ./data:/app/data
+      - ./app:/app
+      - ${XSD_ARCHIVE}:/app/data/xsd
+      - ${XML_ARCHIVE}:/app/data/xml
   postgres:
     image: postgres
     environment:
