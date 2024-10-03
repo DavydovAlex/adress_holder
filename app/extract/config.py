@@ -3,8 +3,7 @@ from dataclasses import dataclass
 import os.path
 import os
 
-
-CONFIG_FILE = 'config.yml'
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')
 
 @dataclass
 class ExtractedFile:
@@ -20,9 +19,11 @@ class Config:
     __path_to_extract: str
     __extracted_files: list[ExtractedFile]
     __data: dict
+    __path: str
 
-    def __init__(self, path):
-        self.__data = self.__read(path)
+    def __init__(self):
+        self.__path = CONFIG_FILE
+        self.__data = self.__read(self.__path)
         self.__region = self.__get_field('REGION', self.__data)
         self.__xsd_archive = self.__get_field('XSD_ARCHIVE_PATH', self.__data)
         self.__xml_archive = self.__get_field('FIAS_ARCHIVE_PATH', self.__data)

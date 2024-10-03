@@ -6,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 import pprint
-from app.extract.config import  CONFIG_FILE, Config
+from .config import Config
 
 
 
@@ -27,8 +27,8 @@ class Extractor:
     __extracted_object: ExtractedObject
 
 
-    def __init__(self, config: Config):
-        self.__config = config
+    def __init__(self):
+        self.__config = Config()
 
     def extract(self):
         self.make_catalog_tree()
