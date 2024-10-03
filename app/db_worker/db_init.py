@@ -9,18 +9,18 @@ import psycopg2
 
 class TableCreator:
     def __init__(self, tablename, xml_path: Path, xsd_path: Path):
+        self.__connection = Connection()
         self.tablename = tablename
-        self.xml_path = xml_path
-        self.xsd_path = xsd_path
-        self.xsd = Xsd(xsd_path)
+        self.__xml_path = xml_path
+        self.__xsd_path = xsd_path
+        self.__xsd = Xsd(xsd_path)
 
-    def create_table(self, connection: Connection):
-        table = create_table_sql(self.xsd.xsd_object, self.tablename)
-        commnents = create_comments_sql(self.xsd.xsd_object, self.tablename)
-        connection.execute(table + commnents)
+    def create_table(self):
+        sql = self.__xsd.create_table_sql()
+        self.__connection.execute(sql)
         print("Table created {}".format(self.tablename))
 
-    def fill_table(self, connection: Connection):
+    def fill_table(self):
         for row in self.xsd.xml_iter(self.xml_path):
             sql = insert_row_sql(row, self.tablename)
             connection.execute(sql)

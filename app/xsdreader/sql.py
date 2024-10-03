@@ -1,4 +1,4 @@
-from app.xsdreader.builder import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.attribute import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
 from copy import deepcopy
 from app.xsdreader.xmlreader import DataRow
 
@@ -60,6 +60,7 @@ def insert_rows_sql(rows: list[DataRow], tablename, table_structure:XsdObject):
     for row in rows:
         sorted_row = []
         for col in table_structure.attributes:
+            pass
 
 
 

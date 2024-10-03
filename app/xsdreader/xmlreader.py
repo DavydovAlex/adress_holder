@@ -1,34 +1,39 @@
-from app.xsdreader.builder import XsdObject, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.attribute import XsdObject, ABoolean, ALong, AInteger, AString, ADate
 from datetime import datetime
+from typing import Any
 class DataColumn:
-
+    __name: str
+    __value: Any
     def __init__(self, name, value):
-        self._name = name
-        self._value = value
+        self.__name = name
+        self.__value = value
 
     @property
     def name(self):
-        return self._name
+        return self.__name
 
     @name.setter
     def name(self, value):
-        self._name = value
+        self.__name = value
 
     @property
     def value(self):
-        return self._value
+        return self.__value
 
     @value.setter
     def value(self, value):
-        self._value = value
+        self.__value = value
+
+
+
 
 
 
 class DataRow:
 
-    def __init__(self, xsd_object: XsdObject =None):
+    def __init__(self, xsd_object: XsdObject = None):
         self._columns = []
-        self._xsd_object =xsd_object
+        self._xsd_object = xsd_object
 
     @property
     def columns(self):

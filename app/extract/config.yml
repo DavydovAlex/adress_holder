@@ -1,6 +1,6 @@
 REGION: 54
-XSD_ARCHIVE_PATH: /data/xsd
-FIAS_ARCHIVE_PATH: /data/xml
+XSD_ARCHIVE_PATH: /data/xsd.zip
+FIAS_ARCHIVE_PATH: /data/xml.zip
 PATH_TO_EXTRACT: /data/extracted
 FILES_TO_EXTRACT:
   ADDR_OBJ:

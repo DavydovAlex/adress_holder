@@ -5,4 +5,6 @@ from pprint import pprint
 
 ex = Extractor()
 ex.extract()
-pprint(ex.extracted_object)
+extracted_object = ex.extracted_object
+for table in extracted_object.dirs:
+    pass

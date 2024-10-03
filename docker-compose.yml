@@ -9,8 +9,8 @@ services:
       POSTGRES_HOST: ${HOST}
     volumes:
       - ./app:/app
-      - ${XSD_ARCHIVE}:/data/xsd
-      - ${XML_ARCHIVE}:/data/xml
+      - ${XSD_ARCHIVE}:/data/xsd.zip
+      - ${XML_ARCHIVE}:/data/xml.zip
       - ./data:/data
   postgres:
     image: postgres
