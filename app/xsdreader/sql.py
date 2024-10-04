@@ -1,47 +1,46 @@
-from app.xsdreader.attribute import XsdObject, Attribute, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.attribute import  Attribute, ABoolean, ALong, AInteger, AString, ADate
 from copy import deepcopy
+from xsd import Xsd
 from app.xsdreader.xmlreader import DataRow
 
 
-def _add_db_pg_type(attribute: Attribute):
-    extended_attr = deepcopy(attribute)
-    if isinstance(attribute, AString):
-        extended_attr.db_type = 'VARCHAR'
-    elif isinstance(attribute, ALong):
-        extended_attr.db_type = 'BIGINT'
-    elif isinstance(attribute, AInteger):
-        extended_attr.db_type = 'INTEGER'
-    elif isinstance(attribute, ABoolean):
-        extended_attr.db_type = 'BOOLEAN'
-    elif isinstance(attribute, ADate):
-        extended_attr.db_type = 'DATE'
-    else:
-        raise Exception("Не определен тип данных")
-    return extended_attr
+class QueryGenerator:
 
+    @staticmethod
+    def __get_db_type(attribute: Attribute) -> str:
+        if isinstance(attribute, AString):
+            return 'VARCHAR'
+        elif isinstance(attribute, ALong):
+            return 'BIGINT'
+        elif isinstance(attribute, AInteger):
+            return 'INTEGER'
+        elif isinstance(attribute, ABoolean):
+            return 'BOOLEAN'
+        elif isinstance(attribute, ADate):
+            return 'DATE'
+        else:
+            raise Exception("Не определен тип данных")
 
-def create_table_sql(obj: XsdObject, tablename=None):
-    sql = 'CREATE TABLE {} (\n'.format(tablename if tablename is not None else obj.name)
-    for column in obj.attributes:
-        column_ext = _add_db_pg_type(column)
-        sql += '"{}" {}{},\n'.format(column_ext.name.lower(),
-                                     column_ext.db_type,
-                                     '({})'.format(column.length) if column.length is not None else '')
-    sql = sql[0:-2] + ');\n'
-    return sql
+    @staticmethod
+    def create_table(xsd_obj: Xsd, tablename=None) -> str:
+        sql = 'CREATE TABLE {} (\n'.format(tablename if tablename is not None else xsd_obj.name)
+        for attribute in xsd_obj.attributes:
+            column_datatype = QueryGenerator.__get_db_type(attribute)
+            sql += '"{}" {}{},\n'.format(attribute.name.lower(),
+                                         column_datatype,
+                                         '({})'.format(attribute.length if attribute.length is not None else ''))
+        sql = sql[0:-2] + ');\n'
+        return sql
 
-
-def create_comments_sql(obj: XsdObject, tablename=None):
-    if tablename is not None:
-        name = tablename
-    else:
-        name = obj.name
-    sql = "comment on table {} is '{}';\n".format(name, obj.comment)
-    for column in obj.attributes:
-        sql += "comment on column {}.{} is '{}';\n".format(name,
-                                                           column.name.lower(),
-                                                           column.comment)
-    return sql
+    @staticmethod
+    def create_comments(xsd_obj: Xsd, tablename=None):
+        name = tablename if tablename is not None else xsd_obj.name
+        sql = "comment on table {} is '{}';\n".format(name, xsd_obj.description)
+        for attribute in xsd_obj.attributes:
+            sql += "comment on column {}.{} is '{}';\n".format(name,
+                                                               attribute.name.lower(),
+                                                               attribute.description)
+        return sql
 
 def insert_row_sql(row:DataRow , tablename):
     columns_list = ['"'+col.name.lower()+'"' for col in row.columns]

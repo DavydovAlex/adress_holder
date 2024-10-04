@@ -45,6 +45,8 @@ class Xsd:
     def is_valid_xml(self, xml_file: Path | str):
         return self.__schema.is_valid(xml_file)
 
+    def decode_xml(self,xml_file: Path | str):
+        return  self.__schema.decode(xml_file)
 
 
 
@@ -78,7 +80,7 @@ class Xsd:
     def _get_xml_data_list(self, xml_path: Path) -> list:
         if not self.is_valid(xml_path):
             raise Exception("XML файл не соотвествует схеме xsd")
-        data = self.schema.decode(xml_path)
+        data = self.__schema.decode(xml_path)
         if len(data) != 1:
             raise Exception("Формат файла выходит за стандартный шаблон обработки")
         data_list = data[list(data.keys())[0]]

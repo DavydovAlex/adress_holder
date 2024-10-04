@@ -1,6 +1,9 @@
-from app.xsdreader.attribute import XsdObject, ABoolean, ALong, AInteger, AString, ADate
+from app.xsdreader.attribute import  ABoolean, ALong, AInteger, AString, ADate
+from xsd import Xsd
 from datetime import datetime
 from typing import Any
+
+
 class DataColumn:
     __name: str
     __value: Any
@@ -30,27 +33,33 @@ class DataColumn:
 
 
 class DataRow:
+    __columns: list[DataColumn]
+    __xsd: Xsd
+    __raw: dict
 
-    def __init__(self, xsd_object: XsdObject = None):
-        self._columns = []
-        self._xsd_object = xsd_object
+    def __init__(self, xsd_obj: Xsd, raw_row: dict):
+        self.__columns = []
+        self.__xsd = xsd_obj
+        self.__raw = raw_row
+
+
+    def __get(self):
+        for attribute in self.__xsd.attributes:
+
 
     @property
     def columns(self):
-        if self._xsd_object is not None:
-            return self._columns
-        return self._columns
+        return self.__columns
 
     @columns.setter
     def columns(self, value):
         raise Exception('Use "append()" to add column')
 
     def append(self, column: DataColumn):
-        if self._xsd_object is not None:
-            column.value = self.change_value_type(column, self._xsd_object)
+        column.value = self.__change_value_type(column, self._xsd_object)
         self._columns.append(column)
 
-    def change_value_type(self, column: DataColumn, xsd_object: XsdObject):
+    def __change_value_type(self, column: DataColumn, xsd_object: XsdObject):
         columns_types = xsd_object.attributes
         type_ = None
         for c_t in columns_types:
@@ -75,6 +84,26 @@ class DataRow:
         else:
             raise Exception("Не определен тип данных")
         return column.value
+
+
+class Xml:
+    __path: str
+    __xsd: Xsd
+    __raw_data:
+
+    def __init__(self, xsd_obj: Xsd, path):
+        if not xsd_obj.is_valid_xml(path):
+            raise Exception("XML файл не соотвествует схеме xsd")
+        self.__raw_data = xsd_obj.decode_xml(path)
+        self.__xsd = xsd_obj
+        self.__path = path
+
+    def __get_data_list(self) -> list:
+        data = self.__xsd.decode_xml(self.__path)
+        if len(data) != 1:
+            raise Exception("Формат файла выходит за стандартный шаблон обработки")
+        data_list = data[list(data.keys())[0]]
+        return data_list
 
 
 
