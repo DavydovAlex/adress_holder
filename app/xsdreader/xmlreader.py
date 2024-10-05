@@ -89,12 +89,12 @@ class DataRow:
 class Xml:
     __path: str
     __xsd: Xsd
-    __raw_data:
+    # __raw_data: dict
 
     def __init__(self, xsd_obj: Xsd, path):
         if not xsd_obj.is_valid_xml(path):
             raise Exception("XML файл не соотвествует схеме xsd")
-        self.__raw_data = xsd_obj.decode_xml(path)
+        # self.__raw_data = xsd_obj.decode_xml(path)
         self.__xsd = xsd_obj
         self.__path = path
 
@@ -105,6 +105,15 @@ class Xml:
         data_list = data[list(data.keys())[0]]
         return data_list
 
+    def data_iter_list(self):
+        data_list = self.__get_data_list()
+        for row in data_list:
+            row_list = []
+            data_row = DataRow(self.xsd_object)
+            for key, value in row.items():
+                column = DataColumn(re.sub('@', '', key), value)
+                data_row.append(column)
+            yield data_row
 
 
 
