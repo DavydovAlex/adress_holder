@@ -1,7 +1,8 @@
-from app.xsdreader.attribute import  Attribute, ABoolean, ALong, AInteger, AString, ADate
-from copy import deepcopy
-from xsd import Xsd
-from app.xsdreader.xmlreader import DataRow
+__all__ = ['QueryGenerator']
+
+from .attribute import Attribute, ABoolean, ALong, AInteger, AString, ADate
+from .xsd import Xsd
+from .xml import DataRow
 
 
 class QueryGenerator:
@@ -22,7 +23,7 @@ class QueryGenerator:
             raise Exception("Не определен тип данных")
 
     @staticmethod
-    def create_table(xsd_obj: Xsd, tablename=None) -> str:
+    def create_table(xsd_obj: Xsd, tablename: str | None = None) -> str:
         sql = 'CREATE TABLE {} (\n'.format(tablename if tablename is not None else xsd_obj.name)
         for attribute in xsd_obj.attributes:
             column_datatype = QueryGenerator.__get_db_type(attribute)
@@ -42,25 +43,39 @@ class QueryGenerator:
                                                                attribute.description)
         return sql
 
-def insert_row_sql(row:DataRow , tablename):
-    columns_list = ['"'+col.name.lower()+'"' for col in row.columns]
-    columns_list_str = ','.join(columns_list)
-    columns_values_list = ["'"+str(col.value)+"'" for col in row.columns]
-    columns_values_list_str = ','.join(columns_values_list)
-    sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_list_str)
-    sql += 'VALUES ({})\n'.format(columns_values_list_str)
-    return sql
 
-def insert_rows_sql(rows: list[DataRow], tablename, table_structure:XsdObject):
-    columns_list = ['"'+col.name.lower()+'"' for col in table_structure.attributes]
-    columns_list_str = ','.join(columns_list)
-    sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_list_str)
-    sql += 'VALUES ('
-    for row in rows:
-        sorted_row = []
-        for col in table_structure.attributes:
-            pass
+    @staticmethod
+    def __get_names_string(row: DataRow):
+        columns_list = ['"' + col.name.lower() + '"' for col in row.columns]
+        return ','.join(columns_list)
 
+    @staticmethod
+    def __get_values_string(row: DataRow):
+        values_list = []
+        for col in row.columns:
+            if col.value is not None:
+                values_list.append("'" + str(col.value) + "'")
+            else:
+                values_list.append("'null'")
+        return ','.join(values_list)
+    @staticmethod
+    def insert_row(row: DataRow, tablename):
+        columns_str = QueryGenerator.__get_names_string(row)
+        values_str = QueryGenerator.__get_values_string(row)
+        sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_str)
+        sql += 'VALUES ({});\n'.format(values_str)
+        return sql
+
+    @staticmethod
+    def insert_rows(rows: list[DataRow], tablename):
+        if len(rows) == 0:
+            raise Exception('Список не может быть пустым')
+        columns_list_str = QueryGenerator.__get_names_string(rows[0])
+        sql = 'INSERT INTO {} ({}) VALUES\n'.format(tablename, columns_list_str)
+        for row in rows:
+            sql += '(' + QueryGenerator.__get_values_string(row) + '),\n'
+        sql = sql[0:-2] + ';\n'
+        return sql
 
 
 

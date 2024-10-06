@@ -6,13 +6,16 @@ class Connection:
     DB = os.environ.get('POSTGRES_DB')
     USER = os.environ.get('POSTGRES_USER')
     PASSWORD = os.environ.get('POSTGRES_PASSWORD')
-    HOST = os.environ.get('HOTS')
+    HOST = os.environ.get('POSTGRES_HOST')
 
     def __init__(self):
         self.host = Connection.HOST
         self.database = Connection.DB
         self.user = Connection.USER
         self.password = Connection.PASSWORD
+        print(Connection.HOST, Connection.DB, Connection.USER, Connection.PASSWORD)
+        self.create_database()
+        self.create_schema()
         self._connection = psycopg2.connect(database=self.database, user=self.user,
                                            host=self.host, password=self.password)
         self._connection.autocommit = True
@@ -21,9 +24,9 @@ class Connection:
     def execute(self, sql):
         self._cursor.execute(sql)
 
-    def __del__(self):
-        self._connection.close()
-        self._cursor.close()
+    # def __del__(self):
+    #     self._connection.close()
+    #     self._cursor.close()
 
     @staticmethod
     def create_database():

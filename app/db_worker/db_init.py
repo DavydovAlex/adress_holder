@@ -20,11 +20,11 @@ class TableCreator:
         self.__connection.execute(sql)
         print("Table created {}".format(self.tablename))
 
-    def fill_table(self):
-        for row in self.xsd.xml_iter(self.xml_path):
-            sql = insert_row_sql(row, self.tablename)
-            connection.execute(sql)
-            print(sql)
+    # def fill_table(self):
+    #     for row in self.xsd.xml_iter(self.xml_path):
+    #         sql = insert_row_sql(row, self.tablename)
+    #         connection.execute(sql)
+    #         print(sql)
 
 
 

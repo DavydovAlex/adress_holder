@@ -1,3 +1,5 @@
+__all__ = ['AttributeFactory', 'Attribute', 'AInteger', 'ALong', 'ADate', 'ABoolean', 'AString']
+
 import abc
 import re
 from xml.etree.ElementTree import Element
