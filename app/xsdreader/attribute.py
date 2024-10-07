@@ -157,9 +157,14 @@ class AString(Attribute):
         super().__init__(element)
         self.__length = self.__get_length()
 
+
     def __get_length(self):
         length = self._get_value('length')
         max_length = self._get_value('maxLength')
         return length or max_length
+
+    @property
+    def length(self):
+        return self.__length
 
 

@@ -62,14 +62,14 @@ class DataRow:
 
     def __change_value_type(self, attribute: Attribute, value: Any, ):
         if isinstance(attribute, AString):
-            pass
+            return value
         elif isinstance(attribute, ALong):
             return int(value)
         elif isinstance(attribute, AInteger):
             return int(value)
         elif isinstance(attribute, ABoolean):
             if isinstance(value, bool):
-                pass
+                return value
             elif isinstance(value, str):
                 return True if value.lower() == 'true' else False
         elif isinstance(attribute, ADate):

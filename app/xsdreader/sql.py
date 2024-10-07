@@ -29,7 +29,7 @@ class QueryGenerator:
             column_datatype = QueryGenerator.__get_db_type(attribute)
             sql += '"{}" {}{},\n'.format(attribute.name.lower(),
                                          column_datatype,
-                                         '({})'.format(attribute.length if attribute.length is not None else ''))
+                                         '({})'.format(attribute.length) if attribute.length is not None else '')
         sql = sql[0:-2] + ');\n'
         return sql
 
@@ -56,8 +56,9 @@ class QueryGenerator:
             if col.value is not None:
                 values_list.append("'" + str(col.value) + "'")
             else:
-                values_list.append("'null'")
+                values_list.append("null")
         return ','.join(values_list)
+
     @staticmethod
     def insert_row(row: DataRow, tablename):
         columns_str = QueryGenerator.__get_names_string(row)

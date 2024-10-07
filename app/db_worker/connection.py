@@ -3,49 +3,38 @@ import os
 
 
 class Connection:
-    DB = os.environ.get('POSTGRES_DB')
-    USER = os.environ.get('POSTGRES_USER')
-    PASSWORD = os.environ.get('POSTGRES_PASSWORD')
-    HOST = os.environ.get('POSTGRES_HOST')
+    __host: str
+    __database: str
+    __user: str
+    __password: str
+    __connection: psycopg2.extensions.connection
 
-    def __init__(self):
-        self.host = Connection.HOST
-        self.database = Connection.DB
-        self.user = Connection.USER
-        self.password = Connection.PASSWORD
-        print(Connection.HOST, Connection.DB, Connection.USER, Connection.PASSWORD)
-        self.create_database()
-        self.create_schema()
-        self._connection = psycopg2.connect(database=self.database, user=self.user,
-                                           host=self.host, password=self.password)
-        self._connection.autocommit = True
-        self._cursor = self._connection.cursor()
+    def __init__(self, host, database, user, password):
+        self.__host = host
+        self.__database = database
+        self.__user = user
+        self.__password = password
+        self.__connection = psycopg2.connect(database=database, user=user,
+                                             host=host, password=password)
+        self.__create_schema()
+        # self._connection.autocommit = True
+        # self._cursor = self._connection.cursor()
 
-    def execute(self, sql):
-        self._cursor.execute(sql)
+    def execute(self, sql, commit=True):
+        with self.__connection.cursor() as cursor:
+            cursor.execute(sql)
+            if commit:
+                self.__connection.commit()
 
-    # def __del__(self):
-    #     self._connection.close()
-    #     self._cursor.close()
+    def __del__(self):
+        self.__connection.close()
 
-    @staticmethod
-    def create_database():
-        connection = psycopg2.connect(user=Connection.USER, host=Connection.HOST, password=Connection.PASSWORD)
-        connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = connection.cursor()
-        cursor.execute('DROP DATABASE IF EXISTS {};'.format(Connection.DB))
-        cursor.execute('CREATE DATABASE {};'.format(Connection.DB))
-        cursor.close()
-        connection.close()
 
-    @staticmethod
-    def create_schema():
-        connection = psycopg2.connect(database=Connection.DB, user=Connection.USER,
-                                      host=Connection.HOST, password=Connection.PASSWORD)
-        with connection:
-            connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-            cursor = connection.cursor()
-            with cursor as cur:
-                cur.execute('CREATE SCHEMA IF NOT EXISTS {};'.format(Connection.USER))
+    def __create_schema(self):
+        drop_schema_sql = 'DROP SCHEMA IF EXISTS {} cascade;'.format(self.__user)
+        self.execute(drop_schema_sql)
+        create_schema_sql ='CREATE SCHEMA IF NOT EXISTS {};'.format(self.__user)
+        self.execute(create_schema_sql)
+
 
 

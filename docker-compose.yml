@@ -14,7 +14,8 @@ services:
       - ${XML_ARCHIVE}:/data/xml.zip
       - ./data:/data
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
   postgres:
     image: postgres
     environment:
@@ -26,6 +27,12 @@ services:
       - 5432:5432
     volumes:
       - ./db_data:${PGDATA}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
   pgadmin:
     image: dpage/pgadmin4
     environment:
