@@ -60,10 +60,6 @@ class Extractor:
         return ExtractedObject(path=path,
                                dirs=dirs)
 
-
-
-
-
     def make_catalog_tree(self):
         if not os.path.exists(self.__config.path_to_extract):
             os.mkdir(self.__config.path_to_extract)

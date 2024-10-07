@@ -17,8 +17,6 @@ class Connection:
         self.__connection = psycopg2.connect(database=database, user=user,
                                              host=host, password=password)
         self.__create_schema()
-        # self._connection.autocommit = True
-        # self._cursor = self._connection.cursor()
 
     def execute(self, sql, commit=True):
         with self.__connection.cursor() as cursor:

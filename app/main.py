@@ -7,6 +7,7 @@ from pathlib import Path
 from xsdreader.sql import QueryGenerator
 from pprint import pprint
 from db_worker.connection import Connection
+from db_worker.table import TableCreator
 import psycopg2
 import time
 
@@ -26,21 +27,10 @@ print('created')
 for table in extracted_object.dirs:
     xsd = Xsd(Path(extracted_object.path) / Path(table.name) / Path(table.xsd))
     xml = Xml(xsd, Path(extracted_object.path) / Path(table.name) / Path(table.xml))
-    print(QueryGenerator.create_table(xsd, table.name))
-    connection.execute(QueryGenerator.create_table(xsd, table.name))
-    rows_bunch = []
-    bunch_size = 50000
-    counter = 0
-    for i, row in enumerate(xml.iter_rows()):
-        if counter == bunch_size:
-            counter = 0
-            connection.execute(QueryGenerator.insert_rows(rows_bunch, table.name))
-            rows_bunch = []
-        counter += 1
-        rows_bunch.append(row)
-    else:
-        if len(rows_bunch) != 0:
-            connection.execute(QueryGenerator.insert_rows(rows_bunch, table.name))
+    table_obj = TableCreator(xsd_obj=xsd, xml_obj=xml, tablename=table.name)
+    table_obj.create_table()
+    table_obj.fill_table(50000)
+
 
 
 
