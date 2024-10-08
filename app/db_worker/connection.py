@@ -16,7 +16,7 @@ class Connection:
         self.__password = password
         self.__connection = psycopg2.connect(database=database, user=user,
                                              host=host, password=password)
-        self.__create_schema()
+        # self.__create_schema()
 
     def execute(self, sql, commit=True):
         with self.__connection.cursor() as cursor:

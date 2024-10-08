@@ -5,6 +5,7 @@ import re
 from xml.etree.ElementTree import Element
 from typing import Iterator
 from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ATTRIBUTE
+from sqlalchemy import Table
 
 _XSD_TEMPLATE = '{{' + XSD_NAMESPACE + '}}{}'
 _XSD_TEMPLATE_FIND = './/' + _XSD_TEMPLATE
