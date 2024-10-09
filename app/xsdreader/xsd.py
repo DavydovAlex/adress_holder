@@ -5,8 +5,8 @@ from pathlib import Path
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 from .attribute import *
-from typing import Iterator
-from xmlschema.validators.simple_types import XSD_NAMESPACE,  XSD_ATTRIBUTE
+from xmlschema.validators.simple_types import XSD_NAMESPACE
+from sqlalchemy import Table, MetaData
 
 ATTRIBUTE_TEMPLATE = '{{' + XSD_NAMESPACE + '}}{}'
 FIND_ATTRIBUTE_TEMPLATE = './/' + ATTRIBUTE_TEMPLATE
@@ -45,8 +45,7 @@ class Xsd:
         return self.__schema
 
 
-
-    def __get_name(self):
+    def __get_name(self) -> str:
         first_element = self.__root.find(FIND_ATTRIBUTE_TEMPLATE.format('element'))
         if 'name' in first_element.attrib:
             xsd_name = first_element.attrib['name']
@@ -55,7 +54,7 @@ class Xsd:
             raise Exception(
                 'Не удается обнаружить element, имеющий аттрибут "name", необходимо проверить структуру xsd файла')
 
-    def __get_description(self):
+    def __get_description(self) ->str:
         table_comment = self.__root.find(FIND_ATTRIBUTE_TEMPLATE.format('documentation'))
         if hasattr(table_comment, 'text'):
             comment = table_comment.text
@@ -63,6 +62,17 @@ class Xsd:
         else:
             return ''
 
+    def get_table(self, metadata_obj: MetaData = None, tablename: str = None) -> tuple[Table, MetaData]:
+        name = self.name if tablename is None else tablename
+        metadata = MetaData() if metadata_obj is None else metadata_obj
+        columns = []
+        for attribute in self.attributes:
+            columns.append(attribute.build_column())
+        table = Table(name=name,
+                      comment=self.description,
+                      metadata=metadata,
+                      *columns)
+        return table, metadata
 
 
 

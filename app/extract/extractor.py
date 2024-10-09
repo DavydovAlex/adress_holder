@@ -139,9 +139,3 @@ class Extractor:
 
 
 
-
-if __name__ == '__main__':
-    config = Config(CONFIG_FILE)
-    ex = Extractor(config)
-    ex.extract()
-    pprint.pprint(ex.extracted_object)
