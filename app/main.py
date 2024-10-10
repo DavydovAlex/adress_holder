@@ -6,14 +6,17 @@ from pathlib import Path
 from xsdreader.sql import QueryGenerator
 import psycopg2
 import logging
+from sqlalchemy import create_engine, text, Engine
+from sqlalchemy.orm import declarative_base, registry
 
 
-def create_schema(connection: psycopg2.extensions.connection, schema: str):
-    with connection.cursor() as cur:
-        drop_schema_sql = 'DROP SCHEMA IF EXISTS {} cascade;'.format(schema)
-        cur.execute(drop_schema_sql)
-        create_schema_sql = 'CREATE SCHEMA IF NOT EXISTS {};'.format(schema)
-        cur.execute(create_schema_sql)
+
+def create_schema(engine: Engine, schema_name):
+    with engine.connect() as connection:
+        drop_schema_sql = text('DROP SCHEMA IF EXISTS {} cascade;'.format(schema_name))
+        connection.execute(drop_schema_sql)
+        create_schema_sql = text('CREATE SCHEMA IF NOT EXISTS {};'.format(schema_name))
+        connection.execute(create_schema_sql)
         connection.commit()
 
 
@@ -25,7 +28,7 @@ def create_table(xsd: Xsd, tablename, connection: psycopg2.extensions.connection
         logging.info("Table '{}' was succesfully created".format(tablename))
         logging.info(create_table_sql)
 
-def fill_table(xml: Xml, tablename, connection: psycopg2.extensions.connection, bunch_size)
+def fill_table(xml: Xml, tablename, connection: psycopg2.extensions.connection, bunch_size):
     rows_count = 0
     for rows in xml.get_rows_bunch_iter(bunch_size):
         rows_count += len(rows)
@@ -52,22 +55,34 @@ if __name__ == '__main__':
         PASSWORD = os.environ.get('POSTGRES_PASSWORD')
         HOST = os.environ.get('POSTGRES_HOST')
 
+        engine = create_engine("postgresql+psycopg2://{user}:{password}@{host}/{dbname}".
+                                     format(user=USER, password=PASSWORD, host=HOST, dbname=DB))
+        create_schema(engine, USER)
+        # connection = engine.connect()
+        Base = declarative_base()
+        mapper_registry = registry()
+
         ex = Extractor()
         ex.extract()
         extracted_object = ex.extracted_object
 
-        connection = psycopg2.connect(database=DB, user=USER,
-                                      host=HOST, password=PASSWORD)
-        create_schema(connection, USER)
-        for table in extracted_object.dirs:
-            xsd = Xsd(Path(extracted_object.path) / Path(table.name) / Path(table.xsd))
-            xml = Xml(xsd, Path(extracted_object.path) / Path(table.name) / Path(table.xml))
+        # connection = psycopg2.connect(database=DB, user=USER,
+        #                               host=HOST, password=PASSWORD)
+        # create_schema(connection, USER)
+        models = dict()
+        for directory in extracted_object.dirs:
+            models[directory.name] = type(directory.name, (object,), dict())
+            print(models[directory.name])
+            xsd = Xsd(Path(extracted_object.path) / Path(directory.name) / Path(directory.xsd))
+            xml = Xml(xsd, Path(extracted_object.path) / Path(directory.name) / Path(directory.xml))
+            table_obj = xsd.get_table(Base.metadata, directory.name)
+            mapper_registry.map_imperatively(models[directory.name], table_obj)
+            print(Base.metadata.tables)
+            # create_table(xsd, table.name, connection)
+            # fill_table(xml, table.name, connection, bunch_size= 50000)
 
-            create_table(xsd, table.name, connection)
-            fill_table(xml, table.name, connection, bunch_size= 50000)
 
 
-        connection.close()
     except Exception as e:
         logging.exception(str(e))
         logging.info("Исправьте ошибки и перезапустите контейнеры:\n"
