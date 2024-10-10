@@ -35,11 +35,26 @@ class DataColumn:
 class DataRow:
     __columns: list[DataColumn]
     __xsd: Xsd
-    __raw: dict
+    __row: dict
 
-    def __init__(self, xsd_obj: Xsd, row: dict):
+    __remove_at: bool
+    __to_lower: bool
+    __convert_values: bool
+
+
+
+    def __init__(self,
+                 xsd_obj: Xsd,
+                 row: dict,
+                 remove_at=True,
+                 to_lower=True,
+                 convert_values=True
+                ):
         self.__xsd = xsd_obj
-        self.__row = row
+        if remove_at:
+            self.__row = row
+        else:
+            self.__row = row
         self.__columns = self.__get_columns()
 
     def get_column_by_name(self, name):
@@ -47,6 +62,17 @@ class DataRow:
             if column.name == name:
                 return column
         return None
+
+    def __transform_name(self, row: dict):
+        row_processed = dict()
+        for key, value in row.items():
+            key_transformed = re.sub('@', '', key).lower()
+            value_transformed = self.__change_value_type(value)
+            row_processed[key_transformed] = value
+        yield row_processed
+
+    def __transform_value(self):
+        pass
 
     def __get_columns(self):
         columns = []
