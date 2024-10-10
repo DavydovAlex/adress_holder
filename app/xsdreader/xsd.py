@@ -54,7 +54,7 @@ class Xsd:
             raise Exception(
                 'Не удается обнаружить element, имеющий аттрибут "name", необходимо проверить структуру xsd файла')
 
-    def __get_description(self) ->str:
+    def __get_description(self) -> str:
         table_comment = self.__root.find(FIND_ATTRIBUTE_TEMPLATE.format('documentation'))
         if hasattr(table_comment, 'text'):
             comment = table_comment.text
@@ -62,17 +62,16 @@ class Xsd:
         else:
             return ''
 
-    def get_table(self, metadata_obj: MetaData = None, tablename: str = None) -> tuple[Table, MetaData]:
+    def get_table(self, metadata_obj: MetaData, tablename: str = None) -> Table:
         name = self.name if tablename is None else tablename
-        metadata = MetaData() if metadata_obj is None else metadata_obj
         columns = []
         for attribute in self.attributes:
             columns.append(attribute.build_column())
         table = Table(name=name,
                       comment=self.description,
-                      metadata=metadata,
+                      metadata=metadata_obj,
                       *columns)
-        return table, metadata
+        return table
 
 
 

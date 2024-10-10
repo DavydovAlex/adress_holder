@@ -61,11 +61,7 @@ class QueryGenerator:
 
     @staticmethod
     def insert_row(row: DataRow, tablename):
-        columns_str = QueryGenerator.__get_names_string(row)
-        values_str = QueryGenerator.__get_values_string(row)
-        sql = 'INSERT INTO {} ({})\n'.format(tablename, columns_str)
-        sql += 'VALUES ({});\n'.format(values_str)
-        return sql
+        return QueryGenerator.insert_rows([row])
 
     @staticmethod
     def insert_rows(rows: list[DataRow], tablename):

@@ -118,6 +118,21 @@ class Xml:
             yield DataRow(self.__xsd,
                           row)
 
+    def get_rows_bunch_iter(self, bunch_size) -> Iterator[list[DataRow]]:
+        bunch = []
+        counter = 0
+        for row in self.iter_rows():
+            if counter == bunch_size:
+                counter = 0
+                yield bunch
+                bunch = []
+            counter += 1
+            bunch.append(row)
+        else:
+            if len(bunch) != 0:
+                yield bunch
+
+
 
 
 

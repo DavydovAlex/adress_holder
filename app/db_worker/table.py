@@ -5,7 +5,6 @@ from app.xsdreader.xml import Xml
 from app.xsdreader.sql import QueryGenerator
 from connection import Connection
 from app.extract.extractor import ExtractedObject
-
 from connection import Connection
 import psycopg2
 
@@ -33,9 +32,7 @@ class TableCreator:
         self.__connection = value
 
     def create_table(self):
-        print(QueryGenerator.create_table(self.__xsd, self.__tablename))
         self.connection.execute(QueryGenerator.create_table(self.__xsd, self.__tablename))
-        print("Table created {}".format(self.__tablename))
 
     def fill_table(self, bunch_size):
         bunch = []
@@ -53,5 +50,8 @@ class TableCreator:
 
 
 
+    def rows_count(self):
+        sql = 'SELECT count(1) from {}'.format(self.__tablename)
+        result = self.connection.select(sql)
 
 
