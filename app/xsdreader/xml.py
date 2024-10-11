@@ -1,35 +1,17 @@
 __all__ = ['DataColumn', 'DataRow', 'Xml']
 
-
 from .attribute import *
 from .xsd import Xsd
 from datetime import datetime
 from typing import Any, Iterator
+from dataclasses import dataclass
 import re
 
 
+@dataclass
 class DataColumn:
-    __name: str
-    __value: Any
-    def __init__(self, name, value):
-        self.__name = name
-        self.__value = value
-
-    @property
-    def name(self):
-        return self.__name
-
-    @name.setter
-    def name(self, value):
-        self.__name = value
-
-    @property
-    def value(self):
-        return self.__value
-
-    @value.setter
-    def value(self, value):
-        self.__value = value
+    name: str
+    value: Any
 
 
 class DataRow:
@@ -41,15 +23,13 @@ class DataRow:
     __to_lower: bool
     __convert_values: bool
 
-
-
     def __init__(self,
                  xsd_obj: Xsd,
                  row: dict,
                  remove_at=True,
                  to_lower=True,
                  convert_values=True
-                ):
+                 ):
         self.__xsd = xsd_obj
         if remove_at:
             self.__row = row
@@ -63,22 +43,32 @@ class DataRow:
                 return column
         return None
 
-    def __transform_name(self, row: dict):
+    def __transform_dict_keys(self, row: dict, remove_at: bool, to_lower: bool):
+        if not (remove_at or to_lower):
+            return row
         row_processed = dict()
         for key, value in row.items():
-            key_transformed = re.sub('@', '', key).lower()
-            value_transformed = self.__change_value_type(value)
+            key_transformed = key
+            if remove_at:
+                key_transformed = re.sub('@', '', key_transformed)
+            if to_lower:
+                key_transformed = key_transformed.lower()
             row_processed[key_transformed] = value
         yield row_processed
 
-    def __transform_value(self):
-        pass
+
+    def __transform_dict_values(self, row: dict, convert: bool, is_key_transformed: bool):
+        if not convert:
+            return row
+        for attribute in self.__xsd.attributes:
+            if attribute.name in row:
+                value = self.__change_value_type(attribute, self.__row[attribute.name])
 
     def __get_columns(self):
         columns = []
         for attribute in self.__xsd.attributes:
             if attribute.name in self.__row:
-                value = self.__change_value_type(attribute,self.__row[attribute.name])
+                value = self.__change_value_type(attribute, self.__row[attribute.name])
                 columns.append(DataColumn(name=attribute.name,
                                           value=value))
             else:
@@ -115,6 +105,7 @@ class DataRow:
 class Xml:
     __path: str
     __xsd: Xsd
+
     # __raw_data: dict
 
     def __init__(self, xsd_obj: Xsd, path):
@@ -157,8 +148,3 @@ class Xml:
         else:
             if len(bunch) != 0:
                 yield bunch
-
-
-
-
-

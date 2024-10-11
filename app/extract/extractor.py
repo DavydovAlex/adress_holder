@@ -5,9 +5,7 @@ import os.path
 import os
 import shutil
 from pathlib import Path
-import pprint
 from .config import Config
-
 
 
 @dataclass
@@ -16,16 +14,23 @@ class Directory:
     xml: str
     name: str
 
+
 @dataclass
 class ExtractedObject:
     path: str
     dirs: list[Directory]
 
+    def get_directory_by_name(self, name):
+        for dir_ in self.dirs:
+            if dir_.name == name:
+                return dir_
+        else:
+            raise Exception('Директория с именем {} не найдена'.format(name))
+
 
 class Extractor:
     __config: Config
     __extracted_object: ExtractedObject
-
 
     def __init__(self):
         self.__config = Config()
@@ -35,7 +40,6 @@ class Extractor:
         self.extract_xsd()
         self.extract_xml()
         self.__extracted_object = self.__make_extracted_object()
-
 
     def __make_extracted_object(self):
         path = self.__config.path_to_extract
@@ -55,8 +59,8 @@ class Extractor:
                 elif Path(file).suffix.lower() == '.xml':
                     xml = file
             dirs.append(Directory(xsd=xsd,
-                                     xml=xml,
-                                     name=folder))
+                                  xml=xml,
+                                  name=folder))
         return ExtractedObject(path=path,
                                dirs=dirs)
 
@@ -83,18 +87,17 @@ class Extractor:
                             format(mask))
         return fullpath, filename
 
-    def get_archive_filelist(self, archive_path, folder = None):
+    def get_archive_filelist(self, archive_path, folder=None):
         with zipfile.ZipFile(archive_path, "r") as zf:
             files_list = []
             for file_path in zf.namelist():
                 if folder is None:
                     if Path(file_path).parent == Path(''):
-                        files_list.append((file_path, file_path, ))
+                        files_list.append((file_path, file_path,))
                 else:
                     if Path(file_path).parent == Path(str(folder)):
                         files_list.append((file_path, str(Path(file_path).name),))
             return files_list
-
 
     def extract_xsd(self):
         try:
@@ -110,7 +113,6 @@ class Extractor:
             if os.path.exists(self.__config.path_to_extract):
                 shutil.rmtree(self.__config.path_to_extract)
             raise e
-
 
     def extract_xml(self):
         try:
@@ -136,6 +138,3 @@ class Extractor:
     @property
     def extracted_object(self):
         return self.__extracted_object
-
-
-

@@ -65,7 +65,6 @@ class Xsd:
     def get_table(self, metadata_obj: MetaData, tablename: str = None) -> Table:
         name = self.name if tablename is None else tablename
         columns = []
-
         for attribute in self.attributes:
             columns.append(attribute.build_column())
         table = Table(name,

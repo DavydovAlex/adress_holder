@@ -8,6 +8,7 @@ import psycopg2
 import logging
 from sqlalchemy import create_engine, text, Engine
 from sqlalchemy.orm import declarative_base, registry
+from models import AddressObject, Base
 
 
 
@@ -70,18 +71,25 @@ if __name__ == '__main__':
         ex = Extractor()
         ex.extract()
         extracted_object = ex.extracted_object
+        AddressObject.associate_dir(extracted_object, 'ADDR_OBJ')
+        AddressObject.associate_dir(extracted_object, 'ADDR_OBJ_TYPES')
 
-        connection = psycopg2.connect(database=DB, user=USER,
-                                      host=HOST, password=PASSWORD)
-        create_schema(connection, USER)
+        for model in Base.get_models():
+            dir_ = model.get_directory()
+            xsd = Xsd(Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xsd))
+            xml = Xml(xsd, Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xml))
 
-        for directory in extracted_object.dirs:
+        # connection = psycopg2.connect(database=DB, user=USER,
+        #                               host=HOST, password=PASSWORD)
+        # create_schema(connection, USER)
 
-            xsd = Xsd(Path(extracted_object.path) / Path(directory.name) / Path(directory.xsd))
-            xml = Xml(xsd, Path(extracted_object.path) / Path(directory.name) / Path(directory.xml))
+        # for model, directory in assotiated_object:
+        #     xsd = Xsd(Path(extracted_object.path) / Path(directory.name) / Path(directory.xsd))
+        #     xml = Xml(xsd, Path(extracted_object.path) / Path(directory.name) / Path(directory.xml))
+        #     print(model.__table__.c)
 
-            create_table(xsd, directory.name, connection)
-            fill_table(xml, directory.name, connection, bunch_size=50000)
+            # create_table(xsd, directory.name, connection)
+            # fill_table(xml, directory.name, connection, bunch_size=50000)
 
 
 

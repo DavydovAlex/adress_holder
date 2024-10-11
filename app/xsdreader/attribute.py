@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element
 from typing import Iterator
 from xmlschema.validators.simple_types import XSD_NAMESPACE, XSD_ATTRIBUTE
 from sqlalchemy import Column, Table
-from sqlalchemy.types import Boolean, String, Integer, Date, BigInteger
+from sqlalchemy.types import Boolean, String, Integer, Date, BigInteger, TypeEngine
 
 _XSD_TEMPLATE = '{{' + XSD_NAMESPACE + '}}{}'
 _XSD_TEMPLATE_FIND = './/' + _XSD_TEMPLATE
@@ -70,8 +70,9 @@ class AttributeFactory:
 
 
 class Attribute(abc.ABC):
-    TYPE = None
-    IS_DEFAULT = None
+    TYPE: str = None
+    IS_DEFAULT: str = None
+    DB_TYPE: TypeEngine = None
     __element: Element
     __name: str
     __use: str
@@ -124,69 +125,59 @@ class Attribute(abc.ABC):
                     .format('var', cls.__name__)
             )
 
-    @abc.abstractmethod
-    def build_column(self) -> Column:
-        pass
+    # @abc.abstractmethod
+    # def build_column(self) -> Column:
+    #     pass
 
 
 class AInteger(Attribute):
     TYPE = 'integer'
     IS_DEFAULT = False
-
-    def build_column(self):
-        return Column(name=self.name.lower(),
-                      type_=Integer,
-                      comment=self.description,
-                      quote=True)
+    DB_TYPE = Integer
 
 
 class ALong(Attribute):
     TYPE = 'long'
     IS_DEFAULT = False
-
-    def build_column(self):
-        return Column(name=self.name.lower(),
-                      type_=BigInteger,
-                      comment=self.description,
-                      quote=True)
+    DB_TYPE = BigInteger
 
 
 class ADate(Attribute):
     TYPE = 'date'
     IS_DEFAULT = False
-
-    def build_column(self):
-        return Column(name=self.name.lower(),
-                      type_=Date,
-                      comment=self.description,
-                      quote=True)
+    DB_TYPE = Date
+    # def build_column(self):
+    #     return Column(name=self.name.lower(),
+    #                   type_=Date,
+    #                   comment=self.description,
+    #                   quote=True)
 
 
 class ABoolean(Attribute):
     TYPE = 'boolean'
     IS_DEFAULT = False
-
-    def build_column(self):
-        return Column(name=self.name.lower(),
-                      type_=Boolean,
-                      comment=self.description,
-                      quote=True)
+    DB_TYPE = Boolean
+    # def build_column(self):
+    #     return Column(name=self.name.lower(),
+    #                   type_=Boolean,
+    #                   comment=self.description,
+    #                   quote=True)
 
 
 class AString(Attribute):
     TYPE = 'string'
     IS_DEFAULT = True
-
+    DB_TYPE = String
 
     def __init__(self, element: Element):
         super().__init__(element)
         self.__length = self.__get_length()
 
-    def build_column(self):
-        return Column(name=self.name.lower(),
-                      type_=String(self.length),
-                      comment=self.description,
-                      quote=True)
+    # def build_column(self):
+    #     return Column(name=self.name.lower(),
+    #                   type_=String(self.length),
+    #                   comment=self.description,
+    #                   quote=True)
 
     def __get_length(self):
         length = self._get_value('length')
