@@ -26,7 +26,7 @@ class Assotiator:
 
     @classmethod
     def get_models(cls):
-        return Base.__subclasses__()
+        return Assotiator.__subclasses__()
 
 class Initiator:
 
@@ -133,4 +133,15 @@ class ParamTypes(Base, Assotiator, Initiator):
     isactive = Column(name='isactive', type_=Boolean, quote=True)
 
 
+class Address(Base):
+    __tablename__ = 'address'
+
+    id = Column(type_=BigInteger, primary_key=True)
+    objectid = Column(type_=BigInteger)
+    objectguid = Column(type_=String(36))
+    kladr = Column(type_=String(100))
+    name = Column(type_=String(250))
+    typename = Column(type_=String(50))
+    level = Column(type_=String(50))
+    path = Column(type_=String)
 
