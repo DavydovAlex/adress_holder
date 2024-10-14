@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 from .attribute import *
 from xmlschema.validators.simple_types import XSD_NAMESPACE
-from sqlalchemy import Table, MetaData, Column, Identity, Integer
+
 
 ATTRIBUTE_TEMPLATE = '{{' + XSD_NAMESPACE + '}}{}'
 FIND_ATTRIBUTE_TEMPLATE = './/' + ATTRIBUTE_TEMPLATE
@@ -61,17 +61,6 @@ class Xsd:
             return comment
         else:
             return ''
-
-    def get_table(self, metadata_obj: MetaData, tablename: str = None) -> Table:
-        name = self.name if tablename is None else tablename
-        columns = []
-        for attribute in self.attributes:
-            columns.append(attribute.build_column())
-        table = Table(name,
-                      metadata_obj,
-                      *columns,
-                      comment=self.description,)
-        return table
 
 
 

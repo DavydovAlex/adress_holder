@@ -6,19 +6,21 @@ from pathlib import Path
 from xsdreader.sql import QueryGenerator
 import psycopg2
 import logging
-from sqlalchemy import create_engine, text, Engine
-from sqlalchemy.orm import declarative_base, registry
-from models import AddressObject, Base
+from sqlalchemy import create_engine, text, Engine, insert, select
+from sqlalchemy.orm import declarative_base, registry, Session
+from models import AddressObject, Base, Assotiator, AddressTypes, AddressParams, AdmHierarchy, ObjectLevels, ParamTypes
+from sqlalchemy.sql.functions import current_date
 
 
 
-def create_schema(connection: psycopg2.extensions.connection, schema: str):
-    with connection.cursor() as cur:
-        drop_schema_sql = 'DROP SCHEMA IF EXISTS {} cascade;'.format(schema)
-        cur.execute(drop_schema_sql)
-        create_schema_sql = 'CREATE SCHEMA IF NOT EXISTS {};'.format(schema)
-        cur.execute(create_schema_sql)
+def create_schema(engine: Engine, schema_name):
+    with engine.connect() as connection:
+        drop_schema_sql = text('DROP SCHEMA IF EXISTS {} cascade;'.format(schema_name))
+        connection.execute(drop_schema_sql)
+        create_schema_sql = text('CREATE SCHEMA IF NOT EXISTS {};'.format(schema_name))
+        connection.execute(create_schema_sql)
         connection.commit()
+
 
 
 def create_table(xsd: Xsd, tablename, connection: psycopg2.extensions.connection):
@@ -68,16 +70,88 @@ if __name__ == '__main__':
         PASSWORD = os.environ.get('POSTGRES_PASSWORD')
         HOST = os.environ.get('POSTGRES_HOST')
 
-        ex = Extractor()
-        ex.extract()
-        extracted_object = ex.extracted_object
-        AddressObject.associate_dir(extracted_object, 'ADDR_OBJ')
-        AddressObject.associate_dir(extracted_object, 'ADDR_OBJ_TYPES')
+        # ex = Extractor()
+        # ex.extract()
+        # extracted_object = ex.extracted_object
+        # logging.info("Archives have been extracted")
 
-        for model in Base.get_models():
-            dir_ = model.get_directory()
-            xsd = Xsd(Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xsd))
-            xml = Xml(xsd, Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xml))
+        engine = create_engine("postgresql+psycopg2://{user}:{password}@{host}/{dbname}".
+                               format(user=USER, password=PASSWORD, host=HOST, dbname=DB))
+        # create_schema(engine, USER)
+        # logging.info('Schema {} created'.format(USER))
+        # Base.metadata.create_all(engine)
+        #
+        # AddressObject.associate_dir(extracted_object, 'ADDR_OBJ')
+        # AddressTypes.associate_dir(extracted_object, 'ADDR_OBJ_TYPES')
+        # AddressParams.associate_dir(extracted_object, 'ADDR_OBJ_PARAMS')
+        # AdmHierarchy.associate_dir(extracted_object, 'ADM_HIERARCHY')
+        # ObjectLevels.associate_dir(extracted_object, 'OBJECT_LEVELS')
+        # ParamTypes.associate_dir(extracted_object, 'PARAM_TYPES')
+
+        # for model in Assotiator.get_models():
+        #     dir_ = model.get_directory()
+        #     Base.metadata.create_all(engine, )
+        #     xsd = Xsd(Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xsd))
+        #     xml = Xml(xsd, Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xml))
+        #
+        #     rows_count = 0
+        #     with Session(bind=engine) as db:
+        #         for rows in xml.iter_bunch(50000):
+        #             rows_count += len(rows)
+        #             model_rows = model.initialize(rows)
+        #             db.add_all(model_rows)
+        #             db.commit()
+        #     logging.info("Table {} created".format(model.__tablename__))
+        #     logging.info(QueryGenerator.create_table(xsd, model.__tablename__))
+        #     logging.info("Added {} rows into {}".format(rows_count, model.__tablename__))
+        with (Session(bind=engine) as db):
+            kladr = db.query(AddressParams.objectid, AddressParams.value).\
+                select_from(AddressParams).\
+                join(ParamTypes, ParamTypes.id == AddressParams.typeid).\
+                filter(ParamTypes.code =='CODE').\
+                filter(AddressParams.enddate > current_date()).subquery()
+            addresses = db.query(AddressObject.id,
+                             AddressObject.objectid,
+                             AddressObject.objectguid,
+                             AddressObject.name,
+                             AddressObject.typename,
+                             AddressObject.level
+                             ).\
+                filter(AddressObject.isactive == 1).\
+                filter(AddressObject.isactual == 1)
+            query = db.query(AddressObject.id,
+                             AddressObject.objectid,
+                             AddressObject.objectguid,
+                             AddressObject.name,
+                             AddressObject.typename,
+                             AddressObject.level,
+                             kladr.c.value,
+                             AdmHierarchy.path
+                             ).select_from(AddressObject).\
+                join(AdmHierarchy, AddressObject.objectid == AdmHierarchy.objectid).\
+                join(kladr, kladr.c.objectid == AddressObject.objectid).\
+                filter(AddressObject.isactive == 1).\
+                filter(AddressObject.isactual == 1).\
+                filter(AdmHierarchy.isactive == 1)
+            for row in query.all():
+                path_list = row.path.split('.')
+                fullpath = ''
+                for address in path_list:
+                    address_row = addresses.filter(AddressObject.objectid == address).all()
+                    if len(address_row) == 0:
+                        logging.info('Для addr_obj.id = {} не удалось составить адресную цепочку, по пути {}'.\
+                                     format(address_row.id, address_row.path))
+                        # raise Exception("Address object not found")
+                    elif len(address_row) > 1:
+                        logging.info('Для addr_obj.objectid= {} найдено больше одной актуальной записи'.\
+                                     format(address_row.objectid))
+                        # raise Exception("Founded more than one Address object")
+                    else:
+                        if address_row[0].level == '1':
+                            continue
+                        else:
+                            fullpath += '{} {}, '.format(address_row[0].typename, address_row[0].name)
+                # print(fullpath)
 
         # connection = psycopg2.connect(database=DB, user=USER,
         #                               host=HOST, password=PASSWORD)

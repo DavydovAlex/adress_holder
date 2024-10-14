@@ -13,70 +13,12 @@ class DataColumn:
     name: str
     value: Any
 
+    @staticmethod
+    def transform_name(column_name: str):
+        return re.sub('@', '', column_name)
 
-class DataRow:
-    __columns: list[DataColumn]
-    __xsd: Xsd
-    __row: dict
-
-    __remove_at: bool
-    __to_lower: bool
-    __convert_values: bool
-
-    def __init__(self,
-                 xsd_obj: Xsd,
-                 row: dict,
-                 remove_at=True,
-                 to_lower=True,
-                 convert_values=True
-                 ):
-        self.__xsd = xsd_obj
-        if remove_at:
-            self.__row = row
-        else:
-            self.__row = row
-        self.__columns = self.__get_columns()
-
-    def get_column_by_name(self, name):
-        for column in self.__columns:
-            if column.name == name:
-                return column
-        return None
-
-    def __transform_dict_keys(self, row: dict, remove_at: bool, to_lower: bool):
-        if not (remove_at or to_lower):
-            return row
-        row_processed = dict()
-        for key, value in row.items():
-            key_transformed = key
-            if remove_at:
-                key_transformed = re.sub('@', '', key_transformed)
-            if to_lower:
-                key_transformed = key_transformed.lower()
-            row_processed[key_transformed] = value
-        yield row_processed
-
-
-    def __transform_dict_values(self, row: dict, convert: bool, is_key_transformed: bool):
-        if not convert:
-            return row
-        for attribute in self.__xsd.attributes:
-            if attribute.name in row:
-                value = self.__change_value_type(attribute, self.__row[attribute.name])
-
-    def __get_columns(self):
-        columns = []
-        for attribute in self.__xsd.attributes:
-            if attribute.name in self.__row:
-                value = self.__change_value_type(attribute, self.__row[attribute.name])
-                columns.append(DataColumn(name=attribute.name,
-                                          value=value))
-            else:
-                columns.append(DataColumn(name=attribute.name,
-                                          value=None))
-        return columns
-
-    def __change_value_type(self, attribute: Attribute, value: Any, ):
+    @staticmethod
+    def transform_value(value: Any, attribute: Attribute):
         if isinstance(attribute, AString):
             return value
         elif isinstance(attribute, ALong):
@@ -91,55 +33,91 @@ class DataRow:
         elif isinstance(attribute, ADate):
             return datetime.strptime(value, '%Y-%m-%d')
         else:
-            raise Exception("Не определен тип данных")
+            raise Exception("Cannot override data type")
+
+
+class DataRow:
+    __columns: list[DataColumn]
+    __attributes: list[Attribute]
+    __row: dict
+
+    def __init__(self,
+                 attributes: list[Attribute],
+                 row: dict
+                 ):
+        self.__attributes = attributes
+        self.__row = self.__transform_names(row)
+        self.__columns = self.__get_columns()
+
+    def get_column_by_name(self, name):
+        for column in self.__columns:
+            if column.name == name:
+                return column
+        return None
+
+    def __transform_names(self, row: dict):
+        row_transformed = dict()
+        for key, value in row.items():
+            row_transformed[DataColumn.transform_name(key)] = value
+        return row_transformed
+
+    def __get_columns(self):
+        columns = []
+        for attribute in self.__attributes:
+            if attribute.name in self.__row:
+                columns.append(DataColumn(name=DataColumn.transform_name(attribute.name),
+                                          value=DataColumn.transform_value(self.__row[attribute.name], attribute)))
+            else:
+                columns.append(DataColumn(name=DataColumn.transform_name(attribute.name),
+                                          value=None))
+        return columns
+
+    def to_dict(self, low_keys: bool = True) -> dict:
+        row = dict()
+        for column in self.__columns:
+            if low_keys:
+                row[column.name.lower()] = column.value
+            else:
+                row[column.name] = column.value
+        return row
 
     @property
     def columns(self):
         return self.__columns
 
-    @columns.setter
-    def columns(self, value):
-        raise Exception('Use "append()" to add column')
-
 
 class Xml:
     __path: str
     __xsd: Xsd
-
-    # __raw_data: dict
+    __data: list
 
     def __init__(self, xsd_obj: Xsd, path):
         if not xsd_obj.schema.is_valid(path):
             raise Exception("XML файл не соотвествует схеме xsd")
-        # self.__raw_data = xsd_obj.decode_xml(path)
         self.__xsd = xsd_obj
         self.__path = path
+        self.__data = self.__get_data()
 
-    def __get_data_list(self) -> list:
+
+    def __get_data(self) -> list:
         data = self.__xsd.schema.decode(self.__path)
         if len(data) != 1:
             raise Exception("Формат файла выходит за стандартный шаблон обработки")
         data_list = data[list(data.keys())[0]]
         return data_list
 
-    def iter_rows_dict(self) -> Iterator[dict]:
-        data_list = self.__get_data_list()
-        for row in data_list:
-            row_processed = dict()
-            for key, value in row.items():
-                row_processed[re.sub('@', '', key)] = value
-            yield row_processed
 
     def iter_rows(self) -> Iterator[DataRow]:
-        for row in self.iter_rows_dict():
-            yield DataRow(self.__xsd,
+        for row in self.__data:
+            yield DataRow(self.__xsd.attributes,
                           row)
 
-    def get_rows_bunch_iter(self, bunch_size) -> Iterator[list[DataRow]]:
+
+    def iter_bunch(self, rows_count) -> Iterator[list[DataRow]]:
         bunch = []
         counter = 0
         for row in self.iter_rows():
-            if counter == bunch_size:
+            if counter == rows_count:
                 counter = 0
                 yield bunch
                 bunch = []

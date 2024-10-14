@@ -9,18 +9,18 @@ FILES_TO_EXTRACT:
   ADDR_OBJ_TYPES:
     XSD: ^AS_ADDR_OBJ_TYPES_\d.+\.xsd$
     XML: ^AS_ADDR_OBJ_TYPES_\d.+\.XML$
-#  ADM_HIERARCHY:
-#    XSD: ^AS_ADM_HIERARCHY_\d.+\.xsd$
-#    XML: ^AS_ADM_HIERARCHY_\d.+\.XML$
-#  OBJECT_LEVELS:
-#    XSD: ^AS_OBJECT_LEVELS_\d.+\.xsd$
-#    XML: ^AS_OBJECT_LEVELS_\d.+\.XML$
-#  ADDR_OBJ_PARAMS:
-#    XSD: ^AS_PARAM_\d.+\.xsd$
-#    XML: ^AS_ADDR_OBJ_PARAMS_\d.+\.XML$
-#  PARAM_TYPES:
-#    XSD: ^AS_PARAM_TYPES_\d.+\.xsd$
-#    XML: ^AS_PARAM_TYPES_\d.+\.XML$
+  ADM_HIERARCHY:
+    XSD: ^AS_ADM_HIERARCHY_\d.+\.xsd$
+    XML: ^AS_ADM_HIERARCHY_\d.+\.XML$
+  OBJECT_LEVELS:
+    XSD: ^AS_OBJECT_LEVELS_\d.+\.xsd$
+    XML: ^AS_OBJECT_LEVELS_\d.+\.XML$
+  ADDR_OBJ_PARAMS:
+    XSD: ^AS_PARAM_\d.+\.xsd$
+    XML: ^AS_ADDR_OBJ_PARAMS_\d.+\.XML$
+  PARAM_TYPES:
+    XSD: ^AS_PARAM_TYPES_\d.+\.xsd$
+    XML: ^AS_PARAM_TYPES_\d.+\.XML$
 
 #  REESTR_OBJECTS:
 #    XSD: ^AS_REESTR_OBJECTS_\d.+\.xsd$
