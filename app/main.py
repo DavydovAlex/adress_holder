@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
         for model in Assotiator.get_models():
             dir_ = model.get_directory()
-            Base.metadata.create_all(engine, )
+            #Base.metadata.create_all(engine, )
             xsd = Xsd(Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xsd))
             xml = Xml(xsd, Path(extracted_object.path) / Path(dir_.name) / Path(dir_.xml))
 

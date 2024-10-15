@@ -17,6 +17,7 @@ class Xsd:
     __root: Element
     __name: str
     __description: str
+    __row_tag: str
     __attributes: list[Attribute]
 
     def __init__(self, path: Path | str):
@@ -25,6 +26,7 @@ class Xsd:
         self.__name = self.__get_name()
         self.__description = self.__get_description()
         self.__attributes = []
+        self.__row_tag = self.__get_row_tag_name()
         for element in AttributeFactory.get_attribute_elements(self.__root):
             self.__attributes.append(AttributeFactory.get(element))
 
@@ -44,6 +46,9 @@ class Xsd:
     def schema(self) -> XMLSchema:
         return self.__schema
 
+    @property
+    def row_tag(self) -> str:
+        return self.__row_tag
 
     def __get_name(self) -> str:
         first_element = self.__root.find(FIND_ATTRIBUTE_TEMPLATE.format('element'))
@@ -61,6 +66,14 @@ class Xsd:
             return comment
         else:
             return ''
+
+    def __get_row_tag_name(self) -> str:
+        row_tag = self.__root.find('.//' + ATTRIBUTE_TEMPLATE.format('element') + '//'
+                                   + ATTRIBUTE_TEMPLATE.format('element'))
+        if 'maxOccurs' in row_tag.attrib and 'name' in row_tag.attrib:
+            return row_tag.attrib['name']
+        else:
+            raise Exception("Can't found row tag")
 
 
 
