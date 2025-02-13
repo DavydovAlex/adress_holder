@@ -1,0 +1,37 @@
+source_file_pattern: ^AS_ADDR_OBJ_TYPES_\d.+\.XML$
+description: "Сведения по типам адресных объектов"
+db_tablename: addr_obj_types
+columns:
+  ID:
+    data_type: integer
+    comment: "Идентификатор записи"
+    primary_key: True
+  LEVEL:
+    data_type: integer
+    comment: "Уровень адресного объекта"
+    db_name: object_level
+  SHORTNAME:
+    data_type: string
+    length: 50
+    comment: "Краткое наименование типа объекта"
+  NAME:
+    data_type: string
+    length: 250
+    comment: "Полное наименование типа объекта"
+  DESC:
+    data_type: string
+    length: 250
+    comment: "Описание"
+    db_name: description
+  UPDATEDATE:
+    data_type: date
+    comment: "Дата внесения (обновления) записи"
+  STARTDATE:
+    data_type: date
+    comment: "Начало действия записи"
+  ENDDATE:
+    data_type: date
+    comment: "Окончание действия записи"
+  ISACTIVE:
+    data_type: boolean
+    comment: "Статус активности"

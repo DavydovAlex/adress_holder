@@ -1,0 +1,56 @@
+source_file_pattern: ^AS_ADDR_OBJ_\d.+\.XML$
+folder: 54
+description: "Сведения классификатора адресообразующих элементов"
+db_tablename: addr_obj
+columns:
+  ID:
+    data_type: long
+    comment: "Уникальный идентификатор записи. Ключевое поле"
+    primary_key: True
+  OBJECTID:
+    data_type: long
+    comment: "Глобальный уникальный идентификатор адресного объекта типа INTEGER"
+  OBJECTGUID:
+    data_type: string
+    length: 36
+    comment: "Глобальный уникальный идентификатор адресного объекта типа UUID"
+  CHANGEID:
+    data_type: long
+    comment: "ID изменившей транзакции"
+  NAME:
+    data_type: string
+    length: 250
+    comment: "Наименование"
+  TYPENAME:
+    data_type: string
+    length: 50
+    comment: "Краткое наименование типа объекта"
+  LEVEL:
+    data_type: string
+    length: 10
+    comment: "Уровень адресного объекта"
+    db_name: object_level
+  OPERTYPEID:
+    data_type: integer
+    comment: "Статус действия над записью – причина появления записи"
+  PREVID:
+    data_type: long
+    comment: "Идентификатор записи связывания с предыдущей исторической записью"
+  NEXTID:
+    data_type: long
+    comment: "Идентификатор записи связывания с последующей исторической записью"
+  UPDATEDATE:
+    data_type: date
+    comment: "Дата внесения (обновления) записи"
+  STARTDATE:
+    data_type: date
+    comment: "Начало действия записи"
+  ENDDATE:
+    data_type: date
+    comment: "Окончание действия записи"
+  ISACTUAL:
+    data_type: integer
+    comment: "Статус актуальности адресного объекта ФИАС"
+  ISACTIVE:
+    data_type: integer
+    comment: "Признак действующего адресного объекта"
