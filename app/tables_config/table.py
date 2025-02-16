@@ -1,65 +1,101 @@
 import dataclasses
 import os.path
 import yaml
+from typing import Any
+from dataclasses import dataclass
+import functools
+from abc import ABC
+from copy import deepcopy
 
 
-def _check_if_None(value):
+# _NoneType = type(None)
+
+
+def _check_if_None(field: str, value):
     if value is None:
-        raise ValueError(f'Field "{value}" cant be empty')
+        raise ValueError(f'Field "{field}" cant be empty')
 
+def check_value_type(field:str, allowed_types: list, value):
+    for allowed_type in allowed_types:
+        if isinstance(value, allowed_type):
+            break
+    else:
+        raise TypeError(f'Field "{field}" must be {[allowed_type for allowed_type in allowed_types]}')
 
 
 class Column:
+    """
+    Class to represent column in xml file
 
-    @dataclasses.dataclass
-    class Datatype:
-        datatype: str
-        db_datatype: str
+    Attributes
+    ----------
+    name : str
+        Name of column in xml file
+    type_ : str
+        type of data(described in related xsd)
+    db_name : str
+        Name of column in database
+    comment : str
+        description of column
+    db_type : str | None
+        Corresponding database column type(Postgres). If None filling by corresponding value for "type_" field
+    length : int | None
+        length of datatype. Not None only for 'string' type
+    primary_key : bool
+        Shows if column is primary key in table
 
-    allowed_datatypes = [
-        Datatype('string',
-                 'VARCHAR'),
-        Datatype('long',
-                 'BIGINT'),
-        Datatype('integer',
-                 'INTEGER'),
-        Datatype('boolean',
-                 'BOOLEAN'),
-        Datatype('date',
-                 'DATE'),
-    ]
+    Methods
+    -------
+
+    """
+
+    types = [('string', 'VARCHAR'),
+             ('long', 'BIGINT'),
+             ('integer', 'INTEGER'),
+             ('boolean', 'BOOLEAN'),
+             ('date', 'DATE'),
+    ]  # Correspondence between type_ and db_type
 
     def __init__(self,
                  name: str,
-                 data_type: str,
+                 type_: str,
                  comment: str,
+                 db_type: str | None = None,
+                 db_name: str | None = None,
                  length: int | None = None,
-                 primary_key: bool | None = None):
+                 primary_key: bool = False):
         self.name = name
-        self.data_type = data_type
-        self.db_datatype = self._get_db_datatype(data_type)
+        self.type_ = type_
+        self.db_name = db_name
+        self.db_type = db_type
         self.comment = comment
         self.length = length
         self.primary_key = primary_key
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, value):
-        _check_if_None(value)
+    def name(self, value: str):
+        check_value_type('name', [str], value)
         self._name = value
 
     @property
-    def data_type(self):
-        return self._data_type
+    def type_(self) -> str:
+        return self._type_
 
-    @data_type.setter
-    def data_type(self, value):
-        _check_if_None(value)
-        self._check_is_valid_datatype(value)
-        self._data_type = value
+    @type_.setter
+    def type_(self, value):
+        check_value_type('type_', [str], value)
+        for allowed_type, _ in Column.types:
+            if allowed_type == value:
+                self._type_ = value
+                break
+        else:
+            raise ValueError(f'"{value}" is incorrect value for "type_"')
+
+
 
     @property
     def comment(self):
@@ -67,16 +103,49 @@ class Column:
 
     @comment.setter
     def comment(self, value):
-        _check_if_None(value)
+        check_value_type('comment', [str], value)
         self._comment = value
+
+    @property
+    def db_type(self) -> str:
+        return self._db_type
+
+    @db_type.setter
+    def db_type(self, value: str| None):
+        check_value_type('db_type', [str, type(None)], value)
+        if value is not None:
+            for _, allowed_db_type in Column.types:
+                if allowed_db_type == value:
+                    self._db_type = value
+                    break
+            else:
+                raise ValueError(f'"{value}" is incorrect value for "db_type"')
+        else:
+            for allowed_type, allowed_db_type in Column.types:
+                if allowed_type == self.type_:
+                    self._db_type = allowed_db_type
+                    break
+
+    @property
+    def db_name(self):
+        return self._db_name
+
+    @db_name.setter
+    def db_name(self, value):
+        check_value_type('db_name', [str, type(None)], value)
+        if value is None:
+            self._db_name = self.name.lower()
+        else:
+            self._db_name = value
 
     @property
     def length(self):
         return self._length
 
     @length.setter
-    def length(self, value):
-        if self.data_type == 'string':
+    def length(self, value: int | None):
+        check_value_type('length', [int, type(None)], value)
+        if self.type_ == 'string':
             self._length = value
         else:
             self._length = None
@@ -86,113 +155,136 @@ class Column:
         return self._primary_key
 
     @primary_key.setter
-    def primary_key(self, value):
+    def primary_key(self, value: bool | None):
+        check_value_type('primary_key', [bool], value)
         if value is None:
             self._primary_key = False
         else:
             self._primary_key = value
 
+
+class ColumnCollection:
+
+    def __init__(self, *columns: Column):
+        self._columns = []
+        for column in columns:
+            self._columns.append(column)
+
+    def __getitem__(self, index):
+        # for column in self._columns:
+        #     if column.name == name:
+        #         return column
+        # else:
+        #     return None
+        return self._columns[index]
+
+    def __contains__(self, name):
+        for column in self._columns:
+            if column.name == name:
+                return True
+        else:
+            return False
+
+    def __len__(self):
+        return len(self._columns)
+
+    def append(self, column: Column):
+        for col in self._columns:
+            if col.name == column.name:
+                raise Exception(f'Column with this name ({col.name}) is already exists')
+        else:
+            if column.primary_key:
+                if self.get_primary_column() is not None:
+                    raise Exception('Set of columns have only one primary key')
+            self._columns.append(column)
+
+    def get_primary_column(self):
+        for column in self._columns:
+            if column.primary_key:
+                return column
+        else:
+            return None
+
     @property
-    def db_datatype(self):
-        return self._db_datatype
-
-    @db_datatype.setter
-    def db_datatype(self, value):
-        _check_if_None(value)
-        self._db_datatype = value
-
-
-
-    def _check_is_valid_datatype(self, value: str):
-        valid_datatypes = set([allowed_datatype.datatype for allowed_datatype in Column.allowed_datatypes])
-        if value not in valid_datatypes:
-            raise ValueError(
-                f'Data type "data_type" not belong to allowed types: [{', '.join(valid_datatypes)}]')
-
-    def _get_db_datatype(self, datatype):
-        self._check_is_valid_datatype(datatype)
-        for allowed_datatype in Column.allowed_datatypes:
-            if allowed_datatype.datatype == datatype:
-                return allowed_datatype.db_datatype
+    def items(self):
+        return self._columns
 
 
 class Table:
 
-    def __init__(self, tablename: str):
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), tablename + '.yml')
-        config = self._read_config_file(path)
-        print(config)
-        self.source_file_pattern = self._get_config_field(config, 'source_file_pattern')
-        self.folder = self._get_config_field(config, 'folder')
-        self.description = self._get_config_field(config, 'description')
-        self.db_tablename = self._get_config_field(config, 'db_tablename')
-        columns = self._get_config_field(config, 'columns')
-
-
-    @property
-    def source_file_pattern(self):
-        return self._source_file_pattern
-
-    @source_file_pattern.setter
-    def source_file_pattern(self, value):
-        _check_if_None(value)
-        self._source_file_pattern = value
+    def __init__(self,
+                 name: str,
+                 data_file_pattern: str,
+                 data_file_folder: int | None,
+                 comment: str,
+                 columns: ColumnCollection):
+        self.name = name
+        self.data_file_pattern = data_file_pattern
+        self.data_file_folder = data_file_folder
+        self.comment = comment
+        self.columns = columns
 
     @property
-    def folder(self):
-        return self._folder
+    def name(self) -> str:
+        return self._name
 
-    @folder.setter
-    def folder(self, value):
-        self._folder = value
-
-    @property
-    def description(self):
-        return self._description
-
-    @description.setter
-    def description(self, value):
-        _check_if_None(value)
-        self._description = value
+    @name.setter
+    def name(self, value: str):
+        check_value_type('name', [str], value)
+        self._name = value
 
     @property
-    def db_tablename(self):
-        return self._db_tablename
+    def data_file_pattern(self) -> str:
+        return self._data_file_pattern
 
-    @db_tablename.setter
-    def db_tablename(self, value):
-        _check_if_None(value)
-        self._db_tablename = value
+    @data_file_pattern.setter
+    def data_file_pattern(self, value: str):
+        check_value_type('data_file_pattern', [str], value)
+        self._data_file_pattern = value
+
+    @property
+    def data_file_folder(self) -> int | None:
+        return self._data_file_folder
+
+    @data_file_folder.setter
+    def data_file_folder(self, value: int | None):
+        check_value_type('data_file_folder', [int, type(None)], value)
+        self._data_file_folder = value
+
+    @property
+    def comment(self) -> str:
+        return self._comment
+
+    @comment.setter
+    def comment(self, value: str):
+        check_value_type('description', [str], value)
+        self._comment = value
+
+    @property
+    def columns(self) -> ColumnCollection:
+        return self._columns
+
+    @columns.setter
+    def columns(self, value: ColumnCollection):
+        check_value_type('columns', [ColumnCollection], value)
+        if len(value) == 0:
+            raise ValueError('Table must have at least one column')
+        if value.get_primary_column() is None:
+            raise ValueError('Set of columns must have one and only one primary key')
+        self._columns = value
+
+    def get_create_table_sql(self) -> str:
+        sql = f'CREATE TABLE {self.name} (\n'
+        for column in self.columns:
+            print(column)
+            length = f'({column.length})' if column.length is not None else ''
+            sql += f'{column.name} {column.db_type}{length},\n'
+        sql = sql[0:-2] + ');\n'
+        return sql
 
 
-
-
-
-    def _get_config_field(self, config: dict, fieldname: str):
-        if fieldname in config:
-            return config[fieldname]
-        else:
-            return None
-
-    def _read_config_file(self, path):
-        if not os.path.exists(path):
-            filename = os.path.basename(path)
-            raise FileNotFoundError(f'File {filename} not found')
-        with open(path, "r", encoding='utf-8') as table_config_file:
-            return yaml.load(table_config_file, yaml.Loader)
-
-    @classmethod
-    def create_from_config(cls,):
-        pass
-
-
-    # def __init__(self,
-    #              name: str,
-    #              source_file_pattern: str,
-    #              folder: str | None,
-    #              description: str,
-    #              columns: list[Column]
-    #              ):
-    #     pass
-
-
+    def get_create_comments_sql(self) -> str:
+        sql = f"comment on table {self.name} is '{self.comment}';\n"
+        for column in self.columns:
+            sql += f"comment on column {self.name}.{column.name} is '{column.comment}';\n"
+        return sql
