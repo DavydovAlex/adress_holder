@@ -1,7 +1,7 @@
 from .table import Column, ColumnCollection, Table
 
 ADDR_OBJ = Table(name='addr_obj',
-                 data_file_folder=54,
+                 data_file_folder='54',
                  data_file_pattern='^AS_ADDR_OBJ_\d.+\.XML$',
                  comment='Сведения классификатора адресообразующих элементов',
                  columns=ColumnCollection(

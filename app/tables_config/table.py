@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import functools
 from abc import ABC
 from copy import deepcopy
-
+from pathlib import Path
 
 # _NoneType = type(None)
 
@@ -95,8 +95,6 @@ class Column:
         else:
             raise ValueError(f'"{value}" is incorrect value for "type_"')
 
-
-
     @property
     def comment(self):
         return self._comment
@@ -164,18 +162,22 @@ class Column:
 
 
 class ColumnCollection:
+    """
+    Class to represent set of columns in xml file
 
+    Attributes
+    ----------
+    columns : tuple[Column,..]
+        set of Column objects
+    Methods
+    -------
+    """
     def __init__(self, *columns: Column):
         self._columns = []
         for column in columns:
             self._columns.append(column)
 
     def __getitem__(self, index):
-        # for column in self._columns:
-        #     if column.name == name:
-        #         return column
-        # else:
-        #     return None
         return self._columns[index]
 
     def __contains__(self, name):
@@ -187,6 +189,9 @@ class ColumnCollection:
 
     def __len__(self):
         return len(self._columns)
+
+    def __iter__(self):
+        return iter(self._columns)
 
     def append(self, column: Column):
         for col in self._columns:
@@ -215,7 +220,7 @@ class Table:
     def __init__(self,
                  name: str,
                  data_file_pattern: str,
-                 data_file_folder: int | None,
+                 data_file_folder: str | None,
                  comment: str,
                  columns: ColumnCollection):
         self.name = name
@@ -243,12 +248,12 @@ class Table:
         self._data_file_pattern = value
 
     @property
-    def data_file_folder(self) -> int | None:
+    def data_file_folder(self) -> str | None:
         return self._data_file_folder
 
     @data_file_folder.setter
-    def data_file_folder(self, value: int | None):
-        check_value_type('data_file_folder', [int, type(None)], value)
+    def data_file_folder(self, value: str | None):
+        check_value_type('data_file_folder', [str, type(None)], value)
         self._data_file_folder = value
 
     @property
@@ -288,3 +293,4 @@ class Table:
         for column in self.columns:
             sql += f"comment on column {self.name}.{column.name} is '{column.comment}';\n"
         return sql
+

@@ -1,6 +1,8 @@
 # from tables_config.table import Table
 from tables_config.ADDR_OBJ import ADDR_OBJ
+from tables_config.archive import Archive
 
+arc = Archive(r'D:\fias\gar_xml (1).zip')
 # print(ADDR_OBJ.name)
 # print(ADDR_OBJ.comment)
 # print(ADDR_OBJ.data_file_folder)
@@ -9,7 +11,10 @@ from tables_config.ADDR_OBJ import ADDR_OBJ
 print(len(ADDR_OBJ.columns))
 print(ADDR_OBJ.get_create_table_sql())
 print(ADDR_OBJ.get_create_comments_sql())
-print('IfD' in ADDR_OBJ.columns)
+print('ID' in ADDR_OBJ.columns)
+for col in ADDR_OBJ.columns:
+    print(col.name)
+
 # print(type(None))
 # t = Table('ADDR_OBJ')
 # print(t.source_file_pattern)
