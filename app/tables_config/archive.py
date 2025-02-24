@@ -1,5 +1,6 @@
 from pathlib import Path
 import zipfile
+import re
 class Archive:
 
     def __init__(self, path: Path | str):
@@ -15,57 +16,25 @@ class Archive:
 
 
     def get_file(self, pattern: str, folder:str | None):
-        for file_path in self._zipfile.namelist():
+        files_paths = self._get_folder_filelist(folder)
+        if len(files_paths) == 0:
+            raise Exception(f'Folder dont have any file')
+        matches = 0
+        for file_path in files_paths:
+            if re.fullmatch(pattern, Path(file_path).name) is not None:
+                matches += 1
+                fullpath = file_path
+        if matches == 0:
+            raise FileNotFoundError(f'Cant find file using pattern "{pattern}"')
+        if matches > 1:
+            raise Exception(f'Found more than one file using pattern "{pattern}"')
+        return self._zipfile.open(fullpath)
+
 
     def _get_folder_filelist(self, folder:str | None = None):
+        folder_path = Path('') if folder is None else Path(folder)
         files_list = []
         for file_path in self._zipfile.namelist():
-            if folder is None:
-                if Path(file_path).parent == Path(''):
-                    files_list.append((file_path, file_path,))
-            else:
-                if Path(file_path).parent == Path(str(folder)):
-                    files_list.append((file_path, str(Path(file_path).name),))
+            if Path(file_path).parent == folder_path:
+                files_list.append(file_path)
         return files_list
-
-
-    def _get_folder_filelist(self, folder: str | None):
-        files_list = []
-        for file_path in self._zipfile.namelist():
-            if folder is None:
-                if Path(file_path).parent == Path(''):
-                    files_list.append((file_path, file_path,))
-            else:
-                if Path(file_path).parent == Path(str(folder)):
-                    files_list.append((file_path, str(Path(file_path).name),))
-        return files_list
-
-
-
-    def __find_file(self, filelist: list[tuple], mask) -> tuple:
-        matches = 0
-        for path, name in filelist:
-            if re.fullmatch(mask, name) is not None:
-                matches += 1
-                filename = name
-                fullpath = path
-        if matches == 0:
-            raise FileNotFoundError(' Не удалось найти файл по заданной маске "{}"'.
-                                    format(mask))
-        if matches > 1:
-            raise Exception('Найдено больше одного файла по заданной маске "{}"'.
-                            format(mask))
-        return fullpath, filename
-
-
-    def get_archive_filelist(self, archive_path, folder=None):
-        with zipfile.ZipFile(archive_path, "r") as zf:
-            files_list = []
-            for file_path in zf.namelist():
-                if folder is None:
-                    if Path(file_path).parent == Path(''):
-                        files_list.append((file_path, file_path,))
-                else:
-                    if Path(file_path).parent == Path(str(folder)):
-                        files_list.append((file_path, str(Path(file_path).name),))
-            return files_list

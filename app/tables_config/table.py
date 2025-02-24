@@ -1,14 +1,17 @@
 import dataclasses
 import os.path
 import yaml
+from datetime import datetime
 from typing import Any
 from dataclasses import dataclass
 import functools
 from abc import ABC
 from copy import deepcopy
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
-# _NoneType = type(None)
+
+from .archive import Archive
 
 
 def _check_if_None(field: str, value):
@@ -161,13 +164,31 @@ class Column:
             self._primary_key = value
 
 
+    def transform_value(self, value: Any):
+        if self.type_ == 'string':
+            return value
+        elif self.type_ == 'long':
+            return int(value)
+        elif self.type_ == 'integer':
+            return int(value)
+        elif self.type_ == 'boolean':
+            if isinstance(value, bool):
+                return value
+            elif isinstance(value, str):
+                return True if value.lower() == 'true' else False
+        elif self.type_ == 'date':
+            return datetime.strptime(value, '%Y-%m-%d')
+        else:
+            raise Exception("Can't transform value")
+
+
 class ColumnCollection:
     """
     Class to represent set of columns in xml file
 
     Attributes
     ----------
-    columns : tuple[Column,..]
+    columns : tuple[Column,...]
         set of Column objects
     Methods
     -------
@@ -278,6 +299,38 @@ class Table:
             raise ValueError('Set of columns must have one and only one primary key')
         self._columns = value
 
+    def get_data(self, archive: Archive):
+        data_file = archive.get_file(self.data_file_pattern, self.data_file_folder)
+        tree = ET.parse(data_file)
+        root = tree.getroot()
+        for elem in root.iter():
+            print(elem.attrib)
+
+    def _transform_row(self, row: dict):
+        pass
+
+    # def iter_rows(self) -> Iterator[DataRow]:
+    #     for row in self.__data:
+    #         yield DataRow(self.__xsd.attributes,
+    #                       row)
+    #
+    #
+    # def iter_bunch(self, rows_count) -> Iterator[list[DataRow]]:
+    #     bunch = []
+    #     counter = 0
+    #     for row in self.iter_rows():
+    #         if counter == rows_count:
+    #             counter = 0
+    #             yield bunch
+    #             bunch = []
+    #         counter += 1
+    #         bunch.append(row)
+    #     else:
+    #         if len(bunch) != 0:
+    #             yield bunch
+
+
+
     def get_create_table_sql(self) -> str:
         sql = f'CREATE TABLE {self.name} (\n'
         for column in self.columns:
@@ -293,4 +346,7 @@ class Table:
         for column in self.columns:
             sql += f"comment on column {self.name}.{column.name} is '{column.comment}';\n"
         return sql
+
+
+
 
