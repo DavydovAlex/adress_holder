@@ -112,7 +112,7 @@ class Column:
         return self._db_type
 
     @db_type.setter
-    def db_type(self, value: str| None):
+    def db_type(self, value: str | None):
         check_value_type('db_type', [str, type(None)], value)
         if value is not None:
             for _, allowed_db_type in Column.types:
@@ -162,24 +162,6 @@ class Column:
             self._primary_key = False
         else:
             self._primary_key = value
-
-
-    def transform_value(self, value: Any):
-        if self.type_ == 'string':
-            return value
-        elif self.type_ == 'long':
-            return int(value)
-        elif self.type_ == 'integer':
-            return int(value)
-        elif self.type_ == 'boolean':
-            if isinstance(value, bool):
-                return value
-            elif isinstance(value, str):
-                return True if value.lower() == 'true' else False
-        elif self.type_ == 'date':
-            return datetime.strptime(value, '%Y-%m-%d')
-        else:
-            raise Exception("Can't transform value")
 
 
 class ColumnCollection:
@@ -249,6 +231,7 @@ class Table:
         self.data_file_folder = data_file_folder
         self.comment = comment
         self.columns = columns
+        self._data = []
 
     @property
     def name(self) -> str:
@@ -299,44 +282,22 @@ class Table:
             raise ValueError('Set of columns must have one and only one primary key')
         self._columns = value
 
-    def get_data(self, archive: Archive):
+    def read_data(self, archive: Archive):
         data_file = archive.get_file(self.data_file_pattern, self.data_file_folder)
         tree = ET.parse(data_file)
         root = tree.getroot()
+        self._data.clear()
         for elem in root.iter():
-            print(elem.attrib)
-
-    def _transform_row(self, row: dict):
-        pass
-
-    # def iter_rows(self) -> Iterator[DataRow]:
-    #     for row in self.__data:
-    #         yield DataRow(self.__xsd.attributes,
-    #                       row)
-    #
-    #
-    # def iter_bunch(self, rows_count) -> Iterator[list[DataRow]]:
-    #     bunch = []
-    #     counter = 0
-    #     for row in self.iter_rows():
-    #         if counter == rows_count:
-    #             counter = 0
-    #             yield bunch
-    #             bunch = []
-    #         counter += 1
-    #         bunch.append(row)
-    #     else:
-    #         if len(bunch) != 0:
-    #             yield bunch
-
+            self._data.append(elem)
+        data_file.close()
 
 
     def get_create_table_sql(self) -> str:
         sql = f'CREATE TABLE {self.name} (\n'
         for column in self.columns:
-            print(column)
             length = f'({column.length})' if column.length is not None else ''
-            sql += f'{column.name} {column.db_type}{length},\n'
+            primary_key = 'PRIMARY KEY' if column.primary_key else ''
+            sql += f'{column.db_name} {column.db_type}{length} {primary_key},\n'
         sql = sql[0:-2] + ');\n'
         return sql
 
@@ -344,7 +305,7 @@ class Table:
     def get_create_comments_sql(self) -> str:
         sql = f"comment on table {self.name} is '{self.comment}';\n"
         for column in self.columns:
-            sql += f"comment on column {self.name}.{column.name} is '{column.comment}';\n"
+            sql += f"comment on column {self.name}.{column.db_name} is '{column.comment}';\n"
         return sql
 
 

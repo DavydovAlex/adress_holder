@@ -3,7 +3,7 @@ from tables_config.ADDR_OBJ import ADDR_OBJ
 from tables_config.archive import Archive
 
 arc = Archive(r'D:\fias\gar_xml (1).zip')
-ADDR_OBJ.get_data(arc)
+ADDR_OBJ.read_data(arc)
 # print(ADDR_OBJ.name)
 # print(ADDR_OBJ.comment)
 # print(ADDR_OBJ.data_file_folder)
