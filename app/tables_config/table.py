@@ -44,6 +44,8 @@ class Column:
         Corresponding database column type(Postgres). If None filling by corresponding value for "type_" field
     length : int | None
         length of datatype. Not None only for 'string' type
+    is_empty : bool
+        Shows if values in column can be empty
     primary_key : bool
         Shows if column is primary key in table
 
@@ -59,6 +61,9 @@ class Column:
              ('date', 'DATE'),
     ]  # Correspondence between type_ and db_type
 
+    #TODO Add date format in class init block
+    date_format = '%Y-%m-%d'
+
     def __init__(self,
                  name: str,
                  type_: str,
@@ -66,6 +71,7 @@ class Column:
                  db_type: str | None = None,
                  db_name: str | None = None,
                  length: int | None = None,
+                 is_empty: bool = False,
                  primary_key: bool = False):
         self.name = name
         self.type_ = type_
@@ -73,6 +79,7 @@ class Column:
         self.db_type = db_type
         self.comment = comment
         self.length = length
+        self.is_empty = is_empty
         self.primary_key = primary_key
 
     @property
@@ -152,6 +159,20 @@ class Column:
             self._length = None
 
     @property
+    def is_empty(self):
+        return self._primary_key
+
+    @is_empty.setter
+    def is_empty(self, value: bool | None):
+        check_value_type('is_empty', [bool], value)
+        if value is None:
+            self._is_empty = False
+        else:
+            self._is_empty = value
+        if self._is_empty is True and self._primary_key is True:
+            raise ValueError('Primary key column can not be empty')
+
+    @property
     def primary_key(self):
         return self._primary_key
 
@@ -162,6 +183,26 @@ class Column:
             self._primary_key = False
         else:
             self._primary_key = value
+
+    def check_value(self, value: str):
+        if value is None and self._is_empty is False:
+            raise ValueError(f'Value "{value}" for column "{self.name}" cant be empty')
+        if self.type_ == 'string':
+            pass
+        elif self.type_ == 'long' or self.type_ == 'integer':
+            if not value.isdigit():
+                raise ValueError(f'Value "{value}" for column "{self.name}" must be number')
+        elif self.type_ == 'boolean':
+            if not value.lower() in ['true', 'false']:
+                raise ValueError(f'Value "{value}" for column "{self.name}" must be boolean')
+        elif self.type_ == 'date':
+            try:
+                datetime.strptime(value, self.date_format)
+            except ValueError:
+                raise ValueError(f'Value "{value}" for column "{self.name}" does not match format "{self.date_format}"')
+
+
+
 
 
 class ColumnCollection:
@@ -216,6 +257,21 @@ class ColumnCollection:
     @property
     def items(self):
         return self._columns
+
+class Row:
+
+    def __init__(self, columns: ColumnCollection, data: dict):
+        self._columns = columns
+        self._data = data
+
+    @property
+    def columns(self):
+        return self._columns
+
+
+
+
+
 
 
 class Table:
