@@ -79,8 +79,9 @@ class Column:
         self.db_type = db_type
         self.comment = comment
         self.length = length
-        self.is_empty = is_empty
         self.primary_key = primary_key
+        self.is_empty = is_empty
+
 
     @property
     def name(self) -> str:
@@ -160,7 +161,7 @@ class Column:
 
     @property
     def is_empty(self):
-        return self._primary_key
+        return self._is_empty
 
     @is_empty.setter
     def is_empty(self, value: bool | None):
@@ -344,7 +345,12 @@ class Table:
         root = tree.getroot()
         self._data.clear()
         for elem in root.iter():
-            self._data.append(elem)
+            row_dict = dict()
+            for key,value in elem.items():
+                row_dict[key] = value
+            print(row_dict)
+            self._data.append(row_dict)
+
         data_file.close()
 
 

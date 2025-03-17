@@ -2,7 +2,7 @@
 from tables_config.ADDR_OBJ import ADDR_OBJ
 from tables_config.archive import Archive
 
-arc = Archive(r'D:\fias\gar_xml (1).zip')
+arc = Archive(r'D:\gar\gar_xml.zip')
 ADDR_OBJ.read_data(arc)
 # print(ADDR_OBJ.name)
 # print(ADDR_OBJ.comment)
@@ -13,8 +13,9 @@ print(len(ADDR_OBJ.columns))
 print(ADDR_OBJ.get_create_table_sql())
 print(ADDR_OBJ.get_create_comments_sql())
 print('ID' in ADDR_OBJ.columns)
-for col in ADDR_OBJ.columns:
-    print(col.name)
+
+# for col in ADDR_OBJ.columns:
+#     print(col.name)
 
 # print(type(None))
 # t = Table('ADDR_OBJ')
