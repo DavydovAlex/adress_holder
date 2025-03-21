@@ -1,6 +1,7 @@
 from pathlib import Path
 import zipfile
 import re
+import xml.etree.ElementTree as ET
 class Archive:
 
     def __init__(self, path: Path | str):
@@ -28,7 +29,17 @@ class Archive:
             raise FileNotFoundError(f'Cant find file using pattern "{pattern}"')
         if matches > 1:
             raise Exception(f'Found more than one file using pattern "{pattern}"')
-        return self._zipfile.open(fullpath)
+        return fullpath
+
+
+    def get_data(self, pattern: str, folder:str | None):
+        file_path = self.get_file(pattern, folder)
+        with self._zipfile.open(file_path) as data_file:
+            tree = ET.parse(data_file)
+            root = tree.getroot()
+            return root.iter()
+
+
 
 
     def _get_folder_filelist(self, folder:str | None = None):

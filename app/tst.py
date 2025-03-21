@@ -3,7 +3,8 @@ from tables_config.ADDR_OBJ import ADDR_OBJ
 from tables_config.archive import Archive
 
 arc = Archive(r'D:\gar\gar_xml.zip')
-ADDR_OBJ.read_data(arc)
+ADDR_OBJ.read_data(arc.get_data(ADDR_OBJ.data_file_pattern,
+                                ADDR_OBJ.data_file_folder))
 # print(ADDR_OBJ.name)
 # print(ADDR_OBJ.comment)
 # print(ADDR_OBJ.data_file_folder)

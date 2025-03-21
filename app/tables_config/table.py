@@ -2,7 +2,7 @@ import dataclasses
 import os.path
 import yaml
 from datetime import datetime
-from typing import Any
+from typing import Any, Iterable
 from dataclasses import dataclass
 import functools
 from abc import ABC
@@ -185,22 +185,33 @@ class Column:
         else:
             self._primary_key = value
 
-    def check_value(self, value: str):
+
+    def convert_value(self, value: str):
         if value is None and self._is_empty is False:
             raise ValueError(f'Value "{value}" for column "{self.name}" cant be empty')
+        converted_value = None
         if self.type_ == 'string':
-            pass
+            converted_value = value
         elif self.type_ == 'long' or self.type_ == 'integer':
             if not value.isdigit():
                 raise ValueError(f'Value "{value}" for column "{self.name}" must be number')
+            else:
+                converted_value = int(value)
         elif self.type_ == 'boolean':
             if not value.lower() in ['true', 'false']:
                 raise ValueError(f'Value "{value}" for column "{self.name}" must be boolean')
+            else:
+                converted_value = True if value.lower() == 'true' else False
         elif self.type_ == 'date':
             try:
                 datetime.strptime(value, self.date_format)
             except ValueError:
                 raise ValueError(f'Value "{value}" for column "{self.name}" does not match format "{self.date_format}"')
+            converted_value = datetime.strptime(value, self.date_format)
+        return converted_value
+
+    def check_value(self, value: str):
+        self.convert_value(value)
 
 
 
@@ -259,15 +270,45 @@ class ColumnCollection:
     def items(self):
         return self._columns
 
+
 class Row:
 
-    def __init__(self, columns: ColumnCollection, data: dict):
+    def __init__(self, columns: ColumnCollection, data: dict | ET.Element = None):
         self._columns = columns
-        self._data = data
+        if data is not None:
+            self._data = self._transform(data)
+        else:
+            self._data = []
 
     @property
     def columns(self):
         return self._columns
+
+    @property
+    def data(self):
+        return self._data
+
+    def _transform(self, data: dict | ET.Element):
+        data_dict = dict()
+        row = []
+        if isinstance(data, ET.Element):
+            for key, value in data.items():
+                data_dict[key] = value
+        elif isinstance(data, dict):
+            data_dict = data
+        else:
+            raise TypeError('Incorrect type for raw row data')
+        for column in self._columns:
+            if column.name in data_dict:
+                row.append(column.convert_value(data_dict[column.name]))
+        return row
+
+    def set(self, data: dict | ET.Element):
+        self._data = self._transform(data)
+
+    def get(self):
+        pass
+
 
 
 
@@ -339,19 +380,9 @@ class Table:
             raise ValueError('Set of columns must have one and only one primary key')
         self._columns = value
 
-    def read_data(self, archive: Archive):
-        data_file = archive.get_file(self.data_file_pattern, self.data_file_folder)
-        tree = ET.parse(data_file)
-        root = tree.getroot()
-        self._data.clear()
-        for elem in root.iter():
-            row_dict = dict()
-            for key,value in elem.items():
-                row_dict[key] = value
-            print(row_dict)
-            self._data.append(row_dict)
-
-        data_file.close()
+    def read_data(self, data: Iterable):
+        for row in data:
+            print(Row(self._columns, row).data)
 
 
     def get_create_table_sql(self) -> str:
